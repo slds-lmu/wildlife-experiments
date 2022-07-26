@@ -4,7 +4,7 @@ then
     echo `date`" - Missing mandatory arguments: GPU name. "
     exit 1
 fi
-export CUDA_VISIBLE_DEVICES=$1GPUNAME
+export CUDA_VISIBLE_DEVICES=$1
 
 SCRIPT=$2
 if [[ -z $SCRIPT ]];
@@ -13,4 +13,4 @@ then
     exit 1
 fi
 
-python scripts/$2SCRIPT
+python scripts/$2.py

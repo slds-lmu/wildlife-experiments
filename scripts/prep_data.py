@@ -2,31 +2,51 @@
 
 import os
 import shutil
-from typing import Final
+from typing import Dict, Final
+from wildlifeml import MegaDetector
 from wildlifeml.utils.io import load_csv_dict, save_as_csv, save_as_json
 
-ROOT_DIR: Final[str] = '/common/bothmannl/'
-TARGET_DIR: Final[str] = '/home/wimmerl/projects/wildlife-experiments/data/'
-INFO_FILE: Final[str] = 'metadata/uc2_labels.csv'
+CFG: Final[Dict] = {
+    'root_dir': '/common/bothmannl/',
+    'img_dir': 'wildlife_images/usecase2/original_images/',
+    'target_dir': '/home/wimmerl/projects/wildlife-experiments/data/',
+    'info_file': 'metadata/uc2_labels.csv',
+    'md_conf': 0.1,
+    'md_batchsize': 32
+}
 
 # Copy file with meta information over
 
-os.makedirs(TARGET_DIR, exist_ok=True)
+os.makedirs(CFG['target_dir'], exist_ok=True)
 shutil.copyfile(
-    os.path.join(ROOT_DIR, INFO_FILE), os.path.join(TARGET_DIR, 'metadata.csv')
+    os.path.join(CFG['root_dir'], CFG['info_file']),
+    os.path.join(CFG['target_dir'], 'metadata.csv')
 )
 
 # Create label map and  label file with two columns (img key, numeric label)
 
-info_list = load_csv_dict(os.path.join(ROOT_DIR, INFO_FILE))
+info_list = load_csv_dict(os.path.join(CFG['root_dir'], CFG['info_file']))
 
 class_names = list(set([x['true_class'] for x in info_list]))
 class_names = sorted(class_names)
 label_map = {class_names[i]: i for i in range(len(class_names))}
 label_dict = {x['orig_name']: label_map[x['true_class']] for x in info_list}
+station_dict = {x['orig_name']: x['station'] for x in info_list}
 
-save_as_json(label_map, os.path.join(TARGET_DIR, 'label_map.json'))
+save_as_json(label_map, os.path.join(CFG['target_dir'], 'label_map.json'))
 save_as_csv(
     [(k, v) for k, v in label_dict.items()],
-    os.path.join(TARGET_DIR, 'labels.csv'),
+    os.path.join(CFG['target_dir'], 'labels.csv'),
 )
+save_as_csv(
+    [(k, v) for k, v in station_dict.items()],
+    os.path.join(CFG['target_dir'], 'stations.csv'),
+)
+
+# Run MegaDetector
+
+# md = MegaDetector(batch_size=CFG['md_batchsize'], confidence_threshold=['md_conf'])
+# md.predict_directory(
+#     directory=os.path.join(CFG['root_dir'], CFG['img_dir']),
+#     output_file='images_megadetector.json'
+# )
