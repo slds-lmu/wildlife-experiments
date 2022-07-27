@@ -4,10 +4,11 @@ import albumentations as A
 import os
 from tensorflow import keras
 from typing import Final, Dict
+
 from wildlifeml.training.trainer import WildlifeTrainer
 from wildlifeml.training.evaluator import Evaluator
-from wildlifeml.data import WidllifeDataset, modify_dataset
-from wildlifeml.utils.datasets import do_stratified_splitting
+from wildlifeml.data import WildlifeDataset, modify_dataset
+from wildlifeml.utils.datasets import do_stratified_splitting, do_stratified_cv
 from wildlifeml.utils.io import load_csv, load_csv_dict, load_json
 
 CFG: Final[Dict] = {
@@ -15,6 +16,7 @@ CFG: Final[Dict] = {
     'root_dir': '/home/wimmerl/projects/wildlife-experiments/data/',
     'label_file': 'labels.csv',
     'detector_file': 'images_megadetector.json',
+    'mapping_file': 'bbox_map.json',
     'meta_file': 'stations.csv',
     'random_state': 123,
     'splits': (0.7, 0.15, 0.15),
@@ -39,7 +41,7 @@ def main() -> None:
         k: {'station': v}
         for k, v in load_csv(os.path.join(CFG['root_dir'], CFG['meta_file']))
     }
-    detector_dict = load_json(os.path.join(CFG['root_dir'], CFG['detector_file']))
+    mapping_dict = load_json(os.path.join(CFG['root_dir'], CFG['mapping_file']))
 
     augmentation = A.Compose(
         [
@@ -48,18 +50,20 @@ def main() -> None:
             A.RandomBrightnessContrast(p=0.2),
         ]
     )
-    dataset = WidllifeDataset(
+    dataset = WildlifeDataset(
         keys=list(label_dict.keys()),
-        img_dir=CFG['img_dir'],
+        image_dir=CFG['img_dir'],
         detector_file_path=os.path.join(CFG['root_dir'], CFG['detector_file']),
         label_file_path=os.path.join(CFG['root_dir'], CFG['label_file']),
+        bbox_mapping_file_path=os.path.join(CFG['root_dir'], CFG['mapping_file']),
         batch_size=CFG['batch_size'],
         augmentation=augmentation,
     )
 
     print('---> Split data into train, val and test sets')
+
     keys_train, keys_val, keys_test = do_stratified_splitting(
-        detector_dict=detector_dict,
+        mapping_dict=mapping_dict,
         img_keys=list(label_dict.keys()),
         splits=CFG['splits'],
         meta_dict=stations_dict,
@@ -84,8 +88,8 @@ def main() -> None:
         num_workers=CFG['num_workers'],
         eval_metrics=CFG['eval_metrics'],
     )
+
     trainer.fit(train_dataset=dataset_train, val_dataset=dataset_val)
-    evaluator = Evaluator(CFG['eval_metrics'])
     print('---> Fine buh-bye')
 
 
