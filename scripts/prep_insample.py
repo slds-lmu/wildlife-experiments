@@ -86,6 +86,7 @@ def main() -> None:
     )
     trainer.fit(train_dataset=dataset_train, val_dataset=dataset_val)
     evaluator = Evaluator(CFG['eval_metrics'])
+    print('---> Fine buh-bye')
 
 
 if __name__ == '__main__':
