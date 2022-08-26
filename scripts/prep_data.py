@@ -12,9 +12,11 @@ CFG: Final[Dict] = {
     'img_dir': 'wildlife_images/usecase2/original_images/',
     'target_dir': '/home/wimmerl/projects/wildlife-experiments/data/',
     'info_file': 'metadata/uc2_labels.csv',
-    'md_file': 'images_megadetector.json',
+    'detector_file': 'images_megadetector.json',
     'md_conf': 0.1,
-    'md_batchsize': 32
+    'md_batchsize': 32,
+    'label_file': 'labels.csv',
+    'station_file': 'stations.csv',
 }
 
 # Copy file with meta information over
@@ -50,13 +52,14 @@ save_as_csv(
 # md = MegaDetector(batch_size=CFG['md_batchsize'], confidence_threshold=['md_conf'])
 # md.predict_directory(
 #     directory=os.path.join(CFG['root_dir'], CFG['img_dir']),
-#     output_file=os.path.join(CFG['target_dir'], CFG['md_file']),
+#     output_file=os.path.join(CFG['target_dir'], CFG['detector_file']),
 # )
 
 # Save mapping from img to bboxes
 
+mapping_file = os.path.join(CFG['target_dir'], 'bbox_map.json')
 mapper = BBoxMapper(
-    detector_file_path=os.path.join(CFG['target_dir'], CFG['md_file']),
-    cache_file_path=os.path.join(CFG['target_dir'], 'bbox_map.json')
+    detector_file_path=os.path.join(CFG['target_dir'], CFG['detector_file']),
+    cache_file_path=mapping_file
 )
 mapper.map_img_to_bboxes()
