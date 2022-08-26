@@ -58,8 +58,5 @@ save_as_csv(
 # Save mapping from img to bboxes
 
 mapping_file = os.path.join(CFG['target_dir'], 'bbox_map.json')
-mapper = BBoxMapper(
-    detector_file_path=os.path.join(CFG['target_dir'], CFG['detector_file']),
-    cache_file_path=mapping_file
-)
-mapper.map_img_to_bboxes()
+mapper = BBoxMapper(os.path.join(CFG['target_dir'], CFG['detector_file']))
+save_as_json(mapper.get_keymap(), mapping_file)

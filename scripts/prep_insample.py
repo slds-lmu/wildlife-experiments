@@ -6,7 +6,11 @@ from tensorflow import keras
 from typing import Final, Dict
 
 from wildlifeml.data import WildlifeDataset, modify_dataset
-from wildlifeml.utils.datasets import do_stratified_splitting, do_stratified_cv
+from wildlifeml.utils.datasets import (
+    do_stratified_splitting,
+    do_stratified_cv,
+    map_bbox_to_img,
+)
 from wildlifeml.utils.io import load_csv, load_csv_dict, load_json
 
 import prep_data as pda
@@ -52,13 +56,12 @@ dataset = WildlifeDataset(
     image_dir=CFG['img_dir'],
     detector_file_path=os.path.join(CFG['root_dir'], CFG['detector_file']),
     label_file_path=os.path.join(CFG['root_dir'], CFG['label_file']),
-    bbox_mapping_file_path=os.path.join(CFG['root_dir'], CFG['mapping_file']),
+    bbox_map=mapping_dict,
     batch_size=CFG['batch_size'],
     augmentation=augmentation,
 )
 
 print('---> Split data into train, val and test sets')
-
 keys_train, keys_val, keys_test = do_stratified_splitting(
     mapping_dict=mapping_dict,
     img_keys=list(label_dict.keys()),
@@ -67,5 +70,11 @@ keys_train, keys_val, keys_test = do_stratified_splitting(
     random_state=CFG['random_state']
 )
 dataset_train = modify_dataset(dataset=dataset, keys=keys_train)
+# TODO fix this
+dataset_train.mapping_dict = {
+    k: v for k, v in dataset.mapping_dict.items()
+    if map_bbox_to_img(k) in dataset_train.keys
+}
 dataset_val = modify_dataset(dataset=dataset, keys=keys_val)
 dataset_test = modify_dataset(dataset=dataset, keys=keys_test)
+breakpoint()
