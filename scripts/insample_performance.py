@@ -1,15 +1,17 @@
 """Showcase in-sample performance of proposed pipeline."""
 
+import os
 from tensorflow import keras
-
+from typing import Dict, Final
 from wildlifeml.training.trainer import WildlifeTrainer
-from wildlifeml.training.evaluator import Evaluator
+from wildlifeml.utils.io import load_pickle, load_json
 
-import scripts.prep_insample as prep
-CFG = prep.CFG
-dataset_train = prep.dataset_train
-dataset_val = prep.dataset_val
-
+CFG: Final[Dict] = load_json(
+    '/home/wimmerl/projects/wildlife-experiments/configs/cfg_insample.json'
+)
+dataset_train = load_pickle(os.path.join(CFG['data_dir'], 'dataset_train.pkl'))
+dataset_val = load_pickle(os.path.join(CFG['data_dir'], 'dataset_val.pkl'))
+dataset_test = load_pickle(os.path.join(CFG['data_dir'], 'dataset_test.pkl'))
 
 trainer = WildlifeTrainer(
         batch_size=CFG['batch_size'],
@@ -25,7 +27,8 @@ trainer = WildlifeTrainer(
         finetune_callbacks=None,
         num_workers=CFG['num_workers'],
         eval_metrics=CFG['eval_metrics'],
-    )
+)
 
 trainer.fit(train_dataset=dataset_train, val_dataset=dataset_val)
 print('---> Fine buh-bye')
+breakpoint()
