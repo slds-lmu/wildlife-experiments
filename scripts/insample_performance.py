@@ -7,7 +7,7 @@ from wildlifeml.training.trainer import WildlifeTrainer, WildlifeTuningTrainer
 from wildlifeml.utils.io import load_pickle, load_json
 
 print(os.cpu_count())
-break
+exit()
 
 CFG: Final[Dict] = load_json(
     '/home/wimmerl/projects/wildlife-experiments/configs/cfg_insample.json'
