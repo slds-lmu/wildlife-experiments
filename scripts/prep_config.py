@@ -26,5 +26,6 @@ CFG: Final[Dict] = {
     'model_backbone': 'resnet50',
     'num_workers': 32,
     'eval_metrics': ['accuracy'],
+    'test_logfile': 'test_logfile.json'
 }
 save_as_json(CFG, os.path.join(PATH, 'configs/cfg_insample.json'))
