@@ -43,6 +43,8 @@ key_map = mapper.get_keymap()
 # Eliminate imgs with missing information
 for k in (set(key_map) - set(label_dict)):
     del key_map[k]
+for k in (set(key_map) - set(station_dict)):
+    del key_map[k]
 
 # Save everything
 save_as_json(label_map, os.path.join(CFG['data_dir'], 'label_map.json'))

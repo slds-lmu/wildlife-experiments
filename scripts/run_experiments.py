@@ -6,11 +6,18 @@ import os
 import ray
 from tensorflow import keras
 from typing import Dict, Final
+from wildlifeml.data import subset_dataset
 from wildlifeml.training.trainer import WildlifeTrainer, WildlifeTuningTrainer
 from wildlifeml.training.active import ActiveLearner
 from wildlifeml.training.evaluator import Evaluator
-from wildlifeml.utils.datasets import separate_empties, map_preds_to_img
+from wildlifeml.utils.datasets import (
+    separate_empties,
+    map_preds_to_img,
+    map_bbox_to_img,
+    do_stratified_splitting
+)
 from wildlifeml.utils.io import load_csv, load_json, load_pickle
+from wildlifeml.utils.misc import flatten_list
 
 CFG: Final[Dict] = load_json(
     '/home/wimmerl/projects/wildlife-experiments/configs/cfg_insample.json'
@@ -36,37 +43,15 @@ stations_dict = {
 # Get truly empty images
 
 empty_class = load_json(os.path.join(CFG['data_dir'], 'label_map.json')).get('empty')
-true_empty = set([k for k, v in label_dict.items() if v == empty_class])
+true_empty = set([k for k, v in label_dict.items() if v == str(empty_class)])
 true_nonempty = set(label_dict.keys()) - set(true_empty)
 
-# Compute empty-detection performance of MD
-
-results_empty_md = {
-    'names': ['ours', 'progressive', 'norouzzadeh'],
-    'thresholds': [CFG['md_conf'], THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
-}
-tnr, tpr, fnr, fpr = [], [], [], []
-
-for threshold in results_empty_md['thresholds']:
-    keys_empty, keys_nonempty = separate_empties(
-        os.path.join(CFG['data_dir'], CFG['detector_file']), threshold
-    )
-    tn = len(true_empty.intersection(set(keys_empty)))
-    tp = len(true_nonempty.intersection(set(keys_nonempty)))
-    fn = len(true_nonempty.intersection(set(keys_empty)))
-    fp = len(true_empty.intersection(set(keys_nonempty)))
-    tnr.append(tn / (tn + fp) if (tn + fp) > 0 else 0.)
-    tpr.append(tp / (tp + fn) if (tp + fn) > 0 else 0.)
-    fnr.append(fn / (tp + fn) if (tp + fn) > 0 else 0.)
-    fpr.append(fp / (tn + fp) if (tn + fp) > 0 else 0.)
-
-results_empty_md.update({'tnr': tnr, 'tpr': tpr, 'fnr': fnr, 'fpr': fpr})
-
-# Compute empty-detection performance of pipeline
+# Prepare training
 
 dataset_train = load_pickle(os.path.join(CFG['data_dir'], 'dataset_train.pkl'))
 dataset_val = load_pickle(os.path.join(CFG['data_dir'], 'dataset_val.pkl'))
 dataset_test = load_pickle(os.path.join(CFG['data_dir'], 'dataset_test.pkl'))
+dataset_pool = load_pickle(os.path.join(CFG['data_dir'], 'dataset_pool.pkl'))
 
 trainer = WildlifeTrainer(
     batch_size=CFG['batch_size'],
@@ -84,32 +69,91 @@ trainer = WildlifeTrainer(
     eval_metrics=CFG['eval_metrics'],
 )
 
-trainer_1 = deepcopy(trainer)
-print('---> Training on wildlife data')
-trainer_1.fit(train_dataset=dataset_train, val_dataset=dataset_val)
-print('---> Predicting on test data')
-preds_bbox = trainer_1.predict(dataset_test)
-preds_imgs = map_preds_to_img(
-    preds=preds_bbox,
-    bbox_keys=dataset_test.keys,
-    mapping_dict=dataset_test.bbox_map,
-    detector_dict=dataset_test.detector_dict,
-)
-preds_onehot = {k: np.argmax(v) for k, v in preds_imgs.items()}
-preds_empty = set([k for k, v in preds_onehot.items() if v == empty_class])
-preds_nonempty = set(preds_onehot.keys()) - set(preds_empty)
+# Compute empty-detection performance of MD stand-alone and for entire pipeline
 
-tn = len(true_empty.intersection(set(preds_empty)))
-tp = len(true_nonempty.intersection(set(preds_nonempty)))
-fn = len(true_nonempty.intersection(set(preds_empty)))
-fp = len(true_empty.intersection(set(preds_nonempty)))
-
-results_empty_ppl = {
-    'tnr': tn / (tn + fp),
-    'tpr': tp / (tp + fn),
-    'fnr': fn / (tp + fn),
-    'fpr': fp / (tn + fp)
+results_empty = {
+    'names': ['ours', 'progressive', 'norouzzadeh'],
+    'thresholds': [CFG['md_conf'], THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
 }
+tnr_md, tpr_md, fnr_md, fpr_md = [], [], [], []
+tnr_ppl, tpr_ppl, fnr_ppl, fpr_ppl = [], [], [], []
+
+for threshold in results_empty['thresholds']:
+
+    # Get imgs that MD classifies as empty
+    keys_empty_bbox, keys_nonempty_bbox = separate_empties(
+        os.path.join(CFG['data_dir'], CFG['detector_file']), threshold
+    )
+    keys_empty_img = list(set([map_bbox_to_img(k) for k in keys_empty_bbox]))
+    keys_nonempty_img = list(set([map_bbox_to_img(k) for k in keys_nonempty_bbox]))
+
+    # Compute confusion metrics for MD stand-alone
+    tn_md = len(true_empty.intersection(set(keys_empty_img)))
+    tp_md = len(true_nonempty.intersection(set(keys_nonempty_img)))
+    fn_md = len(true_nonempty.intersection(set(keys_empty_img)))
+    fp_md = len(true_empty.intersection(set(keys_nonempty_img)))
+    tnr_md.append(tn_md / (tn_md + fp_md) if (tn_md + fp_md) > 0 else 0.)
+    tpr_md.append(tp_md / (tp_md + fn_md) if (tp_md + fn_md) > 0 else 0.)
+    fnr_md.append(fn_md / (tp_md + fn_md) if (tp_md + fn_md) > 0 else 0.)
+    fpr_md.append(fp_md / (tn_md + fp_md) if (tn_md + fp_md) > 0 else 0.)
+
+    # Prepare new train and val data according to threshold
+
+    dataset_thresh = subset_dataset(dataset_pool, keys_nonempty_bbox)
+    share_train = CFG['splits'][0] / (CFG['splits'][0] + CFG['splits'][1])
+    share_val = CFG['splits'][1] / (CFG['splits'][0] + CFG['splits'][1])
+    imgs_keys = list(set([map_bbox_to_img(k) for k in dataset_thresh.keys]))
+    meta_thresh = deepcopy(stations_dict)
+    # TODO fix metadict error (some keys have no entry)
+    keys_train, _, keys_val = do_stratified_splitting(
+        img_keys=imgs_keys,
+        splits=(share_train, 0., share_val),
+        meta_dict={k: v for k, v in stations_dict.items() if k in imgs_keys},
+        random_state=CFG['random_state']
+    )
+    dataset_train_thresh = subset_dataset(
+        dataset_thresh,
+        flatten_list([dataset_thresh.mapping_dict[k] for k in keys_train])
+    )
+    dataset_val_thresh = subset_dataset(
+        dataset_thresh,
+        flatten_list([dataset_thresh.mapping_dict[k] for k in keys_val])
+    )
+
+    # Compute confusion for entire pipeline
+
+    trainer_1 = deepcopy(trainer)
+    print('---> Training on wildlife data')
+    trainer_1.fit(train_dataset=dataset_train_thresh, val_dataset=dataset_val_thresh)
+    print('---> Evaluating on test data')
+    evaluator = Evaluator(
+        label_file_path=os.path.join(CFG['data_dir'], CFG['label_file']),
+        detector_file_path=os.path.join(CFG['data_dir'], CFG['detector_file']),
+        dataset=dataset_test,
+        num_classes=trainer_1.get_num_classes(),
+        conf_threshold=threshold,
+    )
+    conf_ppl = evaluator.evaluate().get('conf_empty')
+    tnr_ppl.append(conf_ppl.get('tnr'))
+    tpr_ppl.append(conf_ppl.get('tpr'))
+    fnr_ppl.append(conf_ppl.get('fnr'))
+    fpr_ppl.append(conf_ppl.get('fpr'))
+
+results_empty.update(
+    {
+        'tnr_md': [format(x, '.4f') for x in tnr_md],
+        'tpr_md': [format(x, '.4f') for x in tpr_md],
+        'fnr_md': [format(x, '.4f') for x in fnr_md],
+        'fpr_md': [format(x, '.4f') for x in fpr_md],
+        'tnr_ppl': [format(x, '.4f') for x in tnr_ppl],
+        'tpr_ppl': [format(x, '.4f') for x in tpr_ppl],
+        'fnr_ppl': [format(x, '.4f') for x in fnr_ppl],
+        'fpr_ppl': [format(x, '.4f') for x in fpr_ppl],
+    }
+)
+
+print(results_empty)
+exit()
 
 # PERFORMANCE --------------------------------------------------------------------------
 
@@ -119,7 +163,6 @@ evaluator = Evaluator(
     detector_file_path=os.path.join(CFG['data_dir'], CFG['detector_file']),
     dataset=dataset_test,
     num_classes=trainer_2.get_num_classes(),
-
 )
 
 print('---> Training on wildlife data')
@@ -178,7 +221,6 @@ results_perf_passive = evaluator.evaluate(model=trainer_4.get_model())
 
 # WITH AL ------------------------------------------------------------------------------
 
-dataset_pool = load_pickle(os.path.join(CFG['data_dir'], 'dataset_pool.pkl'))
 active_learner = ActiveLearner(
     trainer=deepcopy(trainer),
     pool_dataset=dataset_pool,
