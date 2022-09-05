@@ -37,9 +37,9 @@ label_dict = {
     k: v for k, v in load_csv(os.path.join(CFG['data_dir'], CFG['label_file']))
 }
 stations_dict = {
-    k: v for k, v in load_csv(os.path.join(CFG['data_dir'], 'stations.csv'))
+    k: {'station': v}
+    for k, v in load_csv(os.path.join(CFG['data_dir'], CFG['meta_file']))
 }
-
 # Get truly empty images
 
 empty_class = load_json(os.path.join(CFG['data_dir'], 'label_map.json')).get('empty')
@@ -84,6 +84,10 @@ for threshold in results_empty['thresholds']:
     keys_empty_bbox, keys_nonempty_bbox = separate_empties(
         os.path.join(CFG['data_dir'], CFG['detector_file']), threshold
     )
+    keys_empty_bbox = list(set(keys_empty_bbox).intersection(set(dataset_pool.keys)))
+    keys_nonempty_bbox = list(
+        set(keys_nonempty_bbox).intersection(set(dataset_pool.keys))
+    )
     keys_empty_img = list(set([map_bbox_to_img(k) for k in keys_empty_bbox]))
     keys_nonempty_img = list(set([map_bbox_to_img(k) for k in keys_nonempty_bbox]))
 
@@ -104,13 +108,15 @@ for threshold in results_empty['thresholds']:
     share_val = CFG['splits'][1] / (CFG['splits'][0] + CFG['splits'][1])
     imgs_keys = list(set([map_bbox_to_img(k) for k in dataset_thresh.keys]))
     meta_thresh = deepcopy(stations_dict)
-    # TODO fix metadict error (some keys have no entry)
+    for k in (set(imgs_keys) - set(meta_thresh)):
+        meta_thresh.update({k: {'station': None}})
     keys_train, _, keys_val = do_stratified_splitting(
         img_keys=imgs_keys,
         splits=(share_train, 0., share_val),
-        meta_dict={k: v for k, v in stations_dict.items() if k in imgs_keys},
+        meta_dict=meta_thresh,
         random_state=CFG['random_state']
     )
+
     dataset_train_thresh = subset_dataset(
         dataset_thresh,
         flatten_list([dataset_thresh.mapping_dict[k] for k in keys_train])
@@ -133,7 +139,7 @@ for threshold in results_empty['thresholds']:
         num_classes=trainer_1.get_num_classes(),
         conf_threshold=threshold,
     )
-    conf_ppl = evaluator.evaluate().get('conf_empty')
+    conf_ppl = evaluator.evaluate(trainer_1.get_model()).get('conf_empty')
     tnr_ppl.append(conf_ppl.get('tnr'))
     tpr_ppl.append(conf_ppl.get('tpr'))
     fnr_ppl.append(conf_ppl.get('fnr'))
