@@ -1,10 +1,10 @@
 """In-sample results."""
 
 from copy import deepcopy
-import numpy as np
 import os
 import ray
 from tensorflow import keras
+from tensorflow.keras.optimizers import Adam
 from typing import Dict, Final
 from wildlifeml.data import subset_dataset
 from wildlifeml.training.trainer import WildlifeTrainer, WildlifeTuningTrainer
@@ -51,22 +51,29 @@ true_nonempty = set(label_dict.keys()) - set(true_empty)
 dataset_train = load_pickle(os.path.join(CFG['data_dir'], 'dataset_train.pkl'))
 dataset_val = load_pickle(os.path.join(CFG['data_dir'], 'dataset_val.pkl'))
 dataset_test = load_pickle(os.path.join(CFG['data_dir'], 'dataset_test.pkl'))
-dataset_pool = load_pickle(os.path.join(CFG['data_dir'], 'dataset_pool.pkl'))
+dataset_pool = load_pickle(os.path.join(CFG['data_dir'], 'dataset_trainval.pkl'))
 
-trainer = WildlifeTrainer(
-    batch_size=CFG['batch_size'],
+trainer = WildlifeTuningTrainer(
+    search_space={
+        'backbone': ray.tune.choice(['resnet50']),
+        'transfer_learning_rate': ray.tune.choice([1e-4]),
+        'finetune_learning_rate': ray.tune.choice([1e-4]),
+        'batch_size': ray.tune.choice([32])
+    },
     loss_func=keras.losses.SparseCategoricalCrossentropy(),
     num_classes=CFG['num_classes'],
     transfer_epochs=CFG['transfer_epochs'],
     finetune_epochs=CFG['finetune_epochs'],
-    transfer_optimizer=keras.optimizers.Adam(),
-    finetune_optimizer=keras.optimizers.Adam(),
+    transfer_optimizer=Adam(),
+    finetune_optimizer=Adam(),
     finetune_layers=CFG['finetune_layers'],
-    model_backbone=CFG['model_backbone'],
     transfer_callbacks=None,
     finetune_callbacks=None,
     num_workers=CFG['num_workers'],
     eval_metrics=CFG['eval_metrics'],
+    resources_per_trial={'cpu': 4, 'gpu': N_GPU},
+    max_concurrent_trials=1,
+    time_budget=60,
 )
 
 # Compute empty-detection performance of MD stand-alone and for entire pipeline
@@ -139,7 +146,7 @@ for threshold in results_empty['thresholds']:
         num_classes=trainer_1.get_num_classes(),
         conf_threshold=threshold,
     )
-    conf_ppl = evaluator.evaluate(trainer_1.get_model()).get('conf_empty')
+    conf_ppl = evaluator.evaluate(trainer_1).get('conf_empty')
     tnr_ppl.append(conf_ppl.get('tnr'))
     tpr_ppl.append(conf_ppl.get('tpr'))
     fnr_ppl.append(conf_ppl.get('fnr'))
@@ -163,81 +170,81 @@ exit()
 
 # PERFORMANCE --------------------------------------------------------------------------
 
-trainer_2 = deepcopy(trainer)
-evaluator = Evaluator(
-    label_file_path=os.path.join(CFG['data_dir'], CFG['label_file']),
-    detector_file_path=os.path.join(CFG['data_dir'], CFG['detector_file']),
-    dataset=dataset_test,
-    num_classes=trainer_2.get_num_classes(),
-)
-
-print('---> Training on wildlife data')
-trainer_2.fit(train_dataset=dataset_train, val_dataset=dataset_val)
-print('---> Evaluating on test data')
-results_perf = evaluator.evaluate(model=trainer_2.get_model())
-breakpoint()
-
-# BENEFIT OF TUNING --------------------------------------------------------------------
-
-trainer_3 = deepcopy(trainer)
-tuning_trainer = WildlifeTuningTrainer(
-    search_space={
-        'backbone': ray.tune.choice(['resnet50']),
-        'transfer_learning_rate': ray.tune.choice([1e-4]),
-        'finetune_learning_rate': ray.tune.choice([1e-4]),
-        'batch_size': ray.tune.choice([32, 64])
-    },
-    loss_func=keras.losses.SparseCategoricalCrossentropy(),
-    num_classes=CFG['num_classes'],
-    transfer_epochs=CFG['transfer_epochs'],
-    finetune_epochs=CFG['finetune_epochs'],
-    finetune_layers=CFG['finetune_layers'],
-    transfer_callbacks=None,
-    finetune_callbacks=None,
-    num_workers=CFG['num_workers'],
-    eval_metrics=CFG['eval_metrics'],
-    resources_per_trial={'cpu': 4, 'gpu': N_GPU},
-    max_concurrent_trials=1,
-    time_budget=60,
-)
-
-print('---> Training on wildlife data')
-trainer_3.fit(train_dataset=dataset_train, val_dataset=dataset_val)
-tuning_trainer.fit(train_dataset=dataset_train, val_dataset=dataset_val)
-
-print('---> Evaluating on test data')
-results_tuning = {
-    'untuned': evaluator.evaluate(model=trainer_3.get_model()),
-    'tuned': evaluator.evaluate(model=tuning_trainer.get_model())
-}
-
-# WITHOUT AL ---------------------------------------------------------------------------
-
-dataset_is_train = load_pickle(os.path.join(CFG['data_dir'], 'dataset_is_train.pkl'))
-dataset_is_val = load_pickle(os.path.join(CFG['data_dir'], 'dataset_is_val.pkl'))
-dataset_oos = load_pickle(os.path.join(CFG['data_dir'], 'dataset_oos.pkl'))
-
-trainer_4 = deepcopy(trainer)
-
-print('---> Training on in-sample data')
-trainer_4.fit(train_dataset=dataset_is_train, val_dataset=dataset_is_val)
-print('---> Evaluating on test data')
-evaluator.dataset = dataset_oos
-results_perf_passive = evaluator.evaluate(model=trainer_4.get_model())
-
-# WITH AL ------------------------------------------------------------------------------
-
-active_learner = ActiveLearner(
-    trainer=deepcopy(trainer),
-    pool_dataset=dataset_pool,
-    label_file_path=os.path.join(CFG['data_dir'], CFG['label_file']),
-    empty_class_id=load_json(os.path.join(
-        CFG['data_dir'], 'label_map.json')).get('empty'),
-    acquisitor_name='entropy',
-    train_size=CFG['splits'][0],
-    test_dataset=dataset_test,
-    test_logfile_path=os.path.join(CFG['data_dir'], CFG['test_logfile']),
-    meta_dict=stations_dict,
-)
-
-# BENEFIT OF WARMSTART -----------------------------------------------------------------
+# trainer_2 = deepcopy(trainer)
+# evaluator = Evaluator(
+#     label_file_path=os.path.join(CFG['data_dir'], CFG['label_file']),
+#     detector_file_path=os.path.join(CFG['data_dir'], CFG['detector_file']),
+#     dataset=dataset_test,
+#     num_classes=trainer_2.get_num_classes(),
+# )
+#
+# print('---> Training on wildlife data')
+# trainer_2.fit(train_dataset=dataset_train, val_dataset=dataset_val)
+# print('---> Evaluating on test data')
+# results_perf = evaluator.evaluate(model=trainer_2.get_model())
+# breakpoint()
+#
+# # BENEFIT OF TUNING --------------------------------------------------------------------
+#
+# trainer_3 = deepcopy(trainer)
+# tuning_trainer = WildlifeTuningTrainer(
+#     search_space={
+#         'backbone': ray.tune.choice(['resnet50']),
+#         'transfer_learning_rate': ray.tune.choice([1e-4]),
+#         'finetune_learning_rate': ray.tune.choice([1e-4]),
+#         'batch_size': ray.tune.choice([32, 64])
+#     },
+#     loss_func=keras.losses.SparseCategoricalCrossentropy(),
+#     num_classes=CFG['num_classes'],
+#     transfer_epochs=CFG['transfer_epochs'],
+#     finetune_epochs=CFG['finetune_epochs'],
+#     finetune_layers=CFG['finetune_layers'],
+#     transfer_callbacks=None,
+#     finetune_callbacks=None,
+#     num_workers=CFG['num_workers'],
+#     eval_metrics=CFG['eval_metrics'],
+#     resources_per_trial={'cpu': 4, 'gpu': N_GPU},
+#     max_concurrent_trials=1,
+#     time_budget=60,
+# )
+#
+# print('---> Training on wildlife data')
+# trainer_3.fit(train_dataset=dataset_train, val_dataset=dataset_val)
+# tuning_trainer.fit(train_dataset=dataset_train, val_dataset=dataset_val)
+#
+# print('---> Evaluating on test data')
+# results_tuning = {
+#     'untuned': evaluator.evaluate(model=trainer_3.get_model()),
+#     'tuned': evaluator.evaluate(model=tuning_trainer.get_model())
+# }
+#
+# # WITHOUT AL ---------------------------------------------------------------------------
+#
+# dataset_is_train = load_pickle(os.path.join(CFG['data_dir'], 'dataset_is_train.pkl'))
+# dataset_is_val = load_pickle(os.path.join(CFG['data_dir'], 'dataset_is_val.pkl'))
+# dataset_oos = load_pickle(os.path.join(CFG['data_dir'], 'dataset_oos.pkl'))
+#
+# trainer_4 = deepcopy(trainer)
+#
+# print('---> Training on in-sample data')
+# trainer_4.fit(train_dataset=dataset_is_train, val_dataset=dataset_is_val)
+# print('---> Evaluating on test data')
+# evaluator.dataset = dataset_oos
+# results_perf_passive = evaluator.evaluate(model=trainer_4.get_model())
+#
+# # WITH AL ------------------------------------------------------------------------------
+#
+# active_learner = ActiveLearner(
+#     trainer=deepcopy(trainer),
+#     pool_dataset=dataset_pool,
+#     label_file_path=os.path.join(CFG['data_dir'], CFG['label_file']),
+#     empty_class_id=load_json(os.path.join(
+#         CFG['data_dir'], 'label_map.json')).get('empty'),
+#     acquisitor_name='entropy',
+#     train_size=CFG['splits'][0],
+#     test_dataset=dataset_test,
+#     test_logfile_path=os.path.join(CFG['data_dir'], CFG['test_logfile']),
+#     meta_dict=stations_dict,
+# )
+#
+# # BENEFIT OF WARMSTART -----------------------------------------------------------------
