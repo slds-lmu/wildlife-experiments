@@ -131,5 +131,7 @@ dmypy.json
 # Individual
 .idea/*
 .Rhistory
-.pkl
+*.pkl
 ray_results/
+.activecache.json
+*.csv#
