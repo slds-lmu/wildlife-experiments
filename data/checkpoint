@@ -1,0 +1,2 @@
+model_checkpoint_path: "pretrained_weights"
+all_model_checkpoint_paths: "pretrained_weights"

@@ -23,48 +23,48 @@ STATIONS_IS: Final[List] = [
     '8235_For',
     '5838_2For',
     '6225_2For',
-    '7935_2_F',
-    '5924_3For',
-    '8229_2_F',
-    '6027_3For',
-    '6032_4For',
-    '5636_4For',
-    '7545_2For',
-    '6131_1For',
-    '6533_4For',
-    '5923_3For',
-    '6137_4For',
-    '5938_3For',
-    '8130_2_F',
-    '5837_4For',
-    '6234_2For'
+    # '7935_2_F',
+    # '5924_3For',
+    # '8229_2_F',
+    # '6027_3For',
+    # '6032_4For',
+    # '5636_4For',
+    # '7545_2For',
+    # '6131_1For',
+    # '6533_4For',
+    # '5923_3For',
+    # '6137_4For',
+    # '5938_3For',
+    # '8130_2_F',
+    # '5837_4For',
+    # '6234_2For'
 ]
 STATIONS_OOS: Final[List] = [
     '5923_3For',
     '6137_4For',
     '5938_3For',
-    '8130_2_F',
-    '5837_4For',
-    '6234_2For',
-    '7143_4For',
-    '7446_1For',
-    '6035_3For',
-    '8131_1_F',
-    '6934_For',
-    '7837_4_For',
-    '8141_2For',
-    '5933_4_For',
-    '7544_2For',
-    '8243_1For',
-    '7332_For',
-    '5728_2Fb',
-    '6231_4For',
-    '8030_1_F',
-    '7730_2For',
-    '5737_3_For',
-    '6122_4For',
-    '6034_2For',
-    '5728_2Fa'
+    # '8130_2_F',
+    # '5837_4For',
+    # '6234_2For',
+    # '7143_4For',
+    # '7446_1For',
+    # '6035_3For',
+    # '8131_1_F',
+    # '6934_For',
+    # '7837_4_For',
+    # '8141_2For',
+    # '5933_4_For',
+    # '7544_2For',
+    # '8243_1For',
+    # '7332_For',
+    # '5728_2Fb',
+    # '6231_4For',
+    # '8030_1_F',
+    # '7730_2For',
+    # '5737_3_For',
+    # '6122_4For',
+    # '6034_2For',
+    # '5728_2Fa'
 ]
 
 # DATASETS -----------------------------------------------------------------------------
@@ -142,6 +142,12 @@ keys_is_train, keys_is_val, keys_is_test = do_stratified_splitting(
     meta_dict=stations_dict,
     random_state=CFG['random_state']
 )
+keys_oos_train, _, keys_oos_test = do_stratified_splitting(
+    img_keys=keys_oos,
+    splits=(CFG['splits'][0] + CFG['splits'][1], 0.0, CFG['splits'][2]),
+    meta_dict=stations_dict,
+    random_state=CFG['random_state']
+)
 
 for keyset, mode in zip(
         [
@@ -149,9 +155,17 @@ for keyset, mode in zip(
             keys_is_val,
             keys_is_train + keys_is_val,
             keys_is_test,
-            keys_oos
+            keys_oos_train,
+            keys_oos_test,
         ],
-        ['is_train', 'is_val', 'is_trainval', 'is_test', 'oos']
+        [
+            'is_train',
+            'is_val',
+            'is_trainval',
+            'is_test',
+            'oos_train',
+            'oos_test'
+        ]
 ):
     subset = subset_dataset(
         dataset, flatten_list([dataset.mapping_dict[k] for k in keyset])
