@@ -27,10 +27,10 @@ CFG: Final[Dict] = {
     'model_backbone': 'resnet50',
     'num_workers': 16,
     'eval_metrics': ['accuracy'],
-    'test_logfile': 'test_logfile.json',
+    'test_logfile': 'test_logfile',
     'active_dir': PATH + 'active/',
-    'al_batchsize': 128,
+    'al_batchsize': 32,
     'al_iterations': 1,
     'pretraining_ckpt': 'pretrained_weights',
 }
-save_as_json(CFG, os.path.join(PATH, 'configs/cfg_insample.json'))
+save_as_json(CFG, os.path.join(PATH, 'configs/cfg.json'))

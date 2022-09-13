@@ -12,12 +12,16 @@ from wildlifeml.utils.datasets import (
     separate_empties,
 )
 from wildlifeml.utils.io import (
-    load_csv, load_csv_dict, load_json, load_pickle, save_as_pickle
+    load_csv,
+    load_csv_dict,
+    load_json,
+    load_pickle,
+    save_as_pickle
 )
 from wildlifeml.utils.misc import flatten_list
 
 CFG: Final[Dict] = load_json(
-    '/home/wimmerl/projects/wildlife-experiments/configs/cfg_insample.json'
+    '/home/wimmerl/projects/wildlife-experiments/configs/cfg.json'
 )
 STATIONS_IS: Final[List] = [
     '8235_For',
@@ -100,6 +104,7 @@ nonempty_keys = list(
         set(flatten_list([v for v in mapping_dict.values()]))
     )
 )
+
 dataset = WildlifeDataset(
     keys=nonempty_keys,
     image_dir=CFG['img_dir'],
@@ -109,23 +114,6 @@ dataset = WildlifeDataset(
     batch_size=CFG['batch_size'],
     augmentation=augmentation,
 )
-
-# print('---> Split data into train, val and test sets')
-# keys_train, keys_val, keys_test = do_stratified_splitting(
-#     img_keys=list(set([map_bbox_to_img(k) for k in dataset.keys])),
-#     splits=CFG['splits'],
-#     meta_dict=stations_dict,
-#     random_state=CFG['random_state']
-# )
-# for keyset, mode in zip(
-#         [keys_train, keys_val, keys_train + keys_val, keys_test],
-#         ['train', 'val', 'trainval', 'test']):
-#     subset = subset_dataset(
-#         dataset, flatten_list([dataset.mapping_dict[k] for k in keyset])
-#     )
-#     save_as_pickle(subset, os.path.join(CFG['data_dir'], f'dataset_{mode}.pkl'))
-
-# DATASETS OUT-OF-SAMPLE ---------------------------------------------------------------
 
 keys_is = [
     map_bbox_to_img(k) for k in nonempty_keys
@@ -137,13 +125,13 @@ keys_oos = [
 ]
 
 keys_is_train, keys_is_val, keys_is_test = do_stratified_splitting(
-    img_keys=keys_is,
+    img_keys=list(set(keys_is)),
     splits=CFG['splits'],
     meta_dict=stations_dict,
     random_state=CFG['random_state']
 )
 keys_oos_train, _, keys_oos_test = do_stratified_splitting(
-    img_keys=keys_oos,
+    img_keys=list(set(keys_oos)),
     splits=(CFG['splits'][0] + CFG['splits'][1], 0.0, CFG['splits'][2]),
     meta_dict=stations_dict,
     random_state=CFG['random_state']

@@ -26,7 +26,7 @@ from wildlifeml.utils.io import (
 from wildlifeml.utils.misc import flatten_list
 
 CFG: Final[Dict] = load_json(
-    '/home/wimmerl/projects/wildlife-experiments/configs/cfg_insample.json'
+    '/home/wimmerl/projects/wildlife-experiments/configs/cfg.json'
 )
 N_GPU = len(os.environ['CUDA_VISIBLE_DEVICES'])
 N_CPU: Final[int] = 16
@@ -332,45 +332,42 @@ trainer_active = WildlifeTrainer(
     pretraining_checkpoint=os.path.join(CFG['data_dir'], CFG['pretraining_ckpt'])
 )
 
-active_learner_warmstart = ActiveLearner(
-    trainer=trainer_active,
-    pool_dataset=dataset_oos_train,
-    label_file_path=os.path.join(CFG['data_dir'], CFG['label_file']),
-    empty_class_id=load_json(os.path.join(
-        CFG['data_dir'], 'label_map.json')).get('empty'),
-    acquisitor_name='entropy',
-    train_size=CFG['splits'][0],
-    test_dataset=dataset_oos_test,
-    test_logfile_path=os.path.join(CFG['data_dir'], CFG['test_logfile']),
-    meta_dict=stations_dict,
-    active_directory=CFG['active_dir'],
-)
-active_learner_coldstart = ActiveLearner(
-    trainer=deepcopy(trainer),
-    pool_dataset=dataset_oos_train,
-    label_file_path=os.path.join(CFG['data_dir'], CFG['label_file']),
-    empty_class_id=load_json(os.path.join(
-        CFG['data_dir'], 'label_map.json')).get('empty'),
-    acquisitor_name='entropy',
-    train_size=CFG['splits'][0],
-    test_dataset=dataset_oos_test,
-    test_logfile_path=os.path.join(CFG['data_dir'], CFG['test_logfile']),
-    meta_dict=stations_dict,
-    active_directory=CFG['active_dir'],
-)
-
-for learner, mode in zip(
-        [active_learner_warmstart, active_learner_coldstart], ['warmstart', 'coldstart']
+for trainer_obj, mode in zip(
+        [trainer_active, deepcopy(trainer)], ['warmstart', 'coldstart']
 ):
+
+    learner = ActiveLearner(
+        trainer=trainer_obj,
+        pool_dataset=dataset_oos_train,
+        label_file_path=os.path.join(CFG['data_dir'], CFG['label_file']),
+        empty_class_id=load_json(os.path.join(
+            CFG['data_dir'], 'label_map.json')).get('empty'),
+        acquisitor_name='entropy',
+        train_size=CFG['splits'][0],
+        test_dataset=dataset_oos_test,
+        test_logfile_path=os.path.join(
+            CFG['result_dir'], CFG['test_logfile'] + f'{mode}.json'
+        ),
+        meta_dict=stations_dict,
+        active_directory=CFG['active_dir'],
+        state_cache=os.path.join(CFG['active_dir'], '.activecache.json')
+    )
+
     print('---> Running initial AL iteration')
+    if os.path.exists(os.path.join(CFG['active_dir'], '.activecache.json')):
+        os.remove(os.path.join(CFG['active_dir'], '.activecache.json'))
     learner.run()
     learner.do_fresh_start = False
 
     for i in range(CFG['al_iterations']):
         print(f'---> Starting AL iteration {i + 1}')
-        imgs_to_label = os.listdir(os.path.join(CFG['active_dir'], 'images'))
+        keys_to_label = [
+            k for k, _ in load_csv(
+                os.path.join(CFG['active_dir'], 'active_labels.csv')
+            )
+        ]
         labels_supplied = [
-            (k, v) for k, v in label_dict.items() if k in imgs_to_label
+            (k, v) for k, v in label_dict.items() if k in keys_to_label
         ]
         save_as_csv(
             labels_supplied, os.path.join(CFG['active_dir'], 'active_labels.csv')

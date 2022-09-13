@@ -8,7 +8,7 @@ from wildlifeml.data import BBoxMapper
 from wildlifeml.utils.io import load_csv_dict, save_as_csv, load_json, save_as_json
 
 CFG: Final[Dict] = load_json(
-    '/home/wimmerl/projects/wildlife-experiments/configs/cfg_insample.json'
+    '/home/wimmerl/projects/wildlife-experiments/configs/cfg.json'
 )
 
 # Copy file with meta information over
