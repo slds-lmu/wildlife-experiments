@@ -5,9 +5,6 @@ import os
 from typing import Final, Dict, List
 
 from wildlifeml.data import WildlifeDataset, subset_dataset
-from wildlifeml.training.trainer import WildlifeTrainer, WildlifeTuningTrainer
-from wildlifeml.training.evaluator import Evaluator
-from wildlifeml.training.active import ActiveLearner
 from wildlifeml.utils.datasets import (
     do_stratified_splitting,
     do_stratified_cv,
@@ -70,7 +67,7 @@ STATIONS_OOS: Final[List] = [
     '5728_2Fa'
 ]
 
-# DATASETS IN-SAMPLE -------------------------------------------------------------------
+# DATASETS -----------------------------------------------------------------------------
 
 # Get metadata
 
@@ -113,23 +110,20 @@ dataset = WildlifeDataset(
     augmentation=augmentation,
 )
 
-print('---> Split data into train, val and test sets')
-keys_train, keys_val, keys_test = do_stratified_splitting(
-    img_keys=list(set([map_bbox_to_img(k) for k in dataset.keys])),
-    splits=CFG['splits'],
-    meta_dict=stations_dict,
-    random_state=CFG['random_state']
-)
-for keyset, mode in zip([keys_train, keys_val, keys_test], ['train', 'val', 'test']):
-    subset = subset_dataset(
-        dataset, flatten_list([dataset.mapping_dict[k] for k in keyset])
-    )
-    save_as_pickle(subset, os.path.join(CFG['data_dir'], f'dataset_{mode}.pkl'))
-
-dataset_trainval = subset_dataset(
-    dataset, flatten_list([dataset.mapping_dict[k] for k in keys_train + keys_val])
-)
-save_as_pickle(dataset_trainval, os.path.join(CFG['data_dir'], 'dataset_trainval.pkl'))
+# print('---> Split data into train, val and test sets')
+# keys_train, keys_val, keys_test = do_stratified_splitting(
+#     img_keys=list(set([map_bbox_to_img(k) for k in dataset.keys])),
+#     splits=CFG['splits'],
+#     meta_dict=stations_dict,
+#     random_state=CFG['random_state']
+# )
+# for keyset, mode in zip(
+#         [keys_train, keys_val, keys_train + keys_val, keys_test],
+#         ['train', 'val', 'trainval', 'test']):
+#     subset = subset_dataset(
+#         dataset, flatten_list([dataset.mapping_dict[k] for k in keyset])
+#     )
+#     save_as_pickle(subset, os.path.join(CFG['data_dir'], f'dataset_{mode}.pkl'))
 
 # DATASETS OUT-OF-SAMPLE ---------------------------------------------------------------
 
@@ -142,15 +136,22 @@ keys_oos = [
     if stations_dict[map_bbox_to_img(k)]['station'] in STATIONS_OOS
 ]
 
-keys_is_train, _, keys_is_val = do_stratified_splitting(
+keys_is_train, keys_is_val, keys_is_test = do_stratified_splitting(
     img_keys=keys_is,
-    splits=(CFG['splits'][0] + CFG['splits'][2], 0., CFG['splits'][1]),
+    splits=CFG['splits'],
     meta_dict=stations_dict,
     random_state=CFG['random_state']
 )
 
 for keyset, mode in zip(
-        [keys_is_train, keys_is_val, keys_oos], ['is_train', 'is_val', 'oos']
+        [
+            keys_is_train,
+            keys_is_val,
+            keys_is_train + keys_is_val,
+            keys_is_test,
+            keys_oos
+        ],
+        ['is_train', 'is_val', 'is_trainval', 'is_test', 'oos']
 ):
     subset = subset_dataset(
         dataset, flatten_list([dataset.mapping_dict[k] for k in keyset])
