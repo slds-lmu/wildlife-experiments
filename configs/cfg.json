@@ -6,7 +6,6 @@
     "label_file": "labels.csv",
     "detector_file": "images_megadetector.json",
     "mapping_file": "bbox_map.json",
-    "info_file": "metadata/uc2_labels.csv",
     "meta_file": "stations.csv",
     "md_conf": 0.1,
     "md_batchsize": 32,

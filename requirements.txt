@@ -5,6 +5,7 @@ click
 matplotlib
 numpy
 pillow
+ray
 pre-commit
 scikit-learn
 scipy
