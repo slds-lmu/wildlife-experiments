@@ -69,31 +69,14 @@ dataset_is_test = load_pickle(os.path.join(CFG['data_dir'], 'dataset_is_test.pkl
 dataset_oos_train = load_pickle(os.path.join(CFG['data_dir'], 'dataset_oos_train.pkl'))
 dataset_oos_test = load_pickle(os.path.join(CFG['data_dir'], 'dataset_oos_test.pkl'))
 
-# trainer = WildlifeTuningTrainer(
-#     search_space={
-#         'backbone': ray.tune.choice(['resnet50']),
-#         'transfer_learning_rate': ray.tune.choice([1e-4]),
-#         'finetune_learning_rate': ray.tune.choice([1e-4]),
-#         'batch_size': ray.tune.choice([32])
-#     },
-#     loss_func=keras.losses.SparseCategoricalCrossentropy(),
-#     num_classes=CFG['num_classes'],
-#     transfer_epochs=CFG['transfer_epochs'],
-#     finetune_epochs=CFG['finetune_epochs'],
-#     transfer_optimizer=Adam(),
-#     finetune_optimizer=Adam(),
-#     finetune_layers=CFG['finetune_layers'],
-#     transfer_callbacks=None,
-#     finetune_callbacks=None,
-#     num_workers=CFG['num_workers'],
-#     eval_metrics=CFG['eval_metrics'],
-#     resources_per_trial={'cpu': 4, 'gpu': N_GPU},
-#     max_concurrent_trials=1,
-#     time_budget=60,
-# )
-trainer = WildlifeTrainer(
+trainer = WildlifeTuningTrainer(
+    search_space={
+        'backbone': ray.tune.choice(['resnet50']),
+        'transfer_learning_rate': ray.tune.choice([1e-4]),
+        'finetune_learning_rate': ray.tune.choice([1e-4]),
+        'batch_size': ray.tune.choice([32])
+    },
     loss_func=keras.losses.SparseCategoricalCrossentropy(),
-    batch_size=CFG['batch_size'],
     num_classes=CFG['num_classes'],
     transfer_epochs=CFG['transfer_epochs'],
     finetune_epochs=CFG['finetune_epochs'],
@@ -104,7 +87,14 @@ trainer = WildlifeTrainer(
     finetune_callbacks=None,
     num_workers=CFG['num_workers'],
     eval_metrics=CFG['eval_metrics'],
+    resources_per_trial={'cpu': 4, 'gpu': N_GPU},
+    max_concurrent_trials=1,
+    time_budget=10,
+    # search_alg_id='randomsearch',
+    # scheduler_alg_id='fifoscheduler',
+    # objective='accuracy',
 )
+
 evaluator_is = Evaluator(
     label_file_path=os.path.join(CFG['data_dir'], CFG['label_file']),
     detector_file_path=os.path.join(CFG['data_dir'], CFG['detector_file']),
@@ -218,17 +208,17 @@ evaluator_oos = Evaluator(
 
 # PERFORMANCE --------------------------------------------------------------------------
 
-# trainer_perf_is = deepcopy(trainer)
-#
-# print('---> Training on wildlife data')
-# trainer_perf_is.fit(train_dataset=dataset_is_train, val_dataset=dataset_is_val)
-# print('---> Evaluating on test data')
-# results_perf = evaluator_is.evaluate(trainer_perf_is)
-#
-# save_as_json(
-#     results_perf, os.path.join(CFG['result_dir'], 'results_insample_perf.json')
-# )
-# exit()
+trainer_perf_is = deepcopy(trainer)
+
+print('---> Training on wildlife data')
+trainer_perf_is.fit(train_dataset=dataset_is_train, val_dataset=dataset_is_val)
+print('---> Evaluating on test data')
+results_perf = evaluator_is.evaluate(trainer_perf_is)
+
+save_as_json(
+    results_perf, os.path.join(CFG['result_dir'], 'results_insample_perf.json')
+)
+exit()
 
 # BENEFIT OF TUNING --------------------------------------------------------------------
 
