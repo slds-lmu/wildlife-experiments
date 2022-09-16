@@ -101,9 +101,10 @@ def main(repo_dir: str, experiment: str):
         eval_metrics=cfg['eval_metrics'],
         resources_per_trial={'cpu': 4, 'gpu': N_GPU},
         max_concurrent_trials=1,
-        time_budget=10,
-        # search_alg_id='randomsearch',
-        # scheduler_alg_id='fifoscheduler',
+        time_budget=3600, # both time_budget & n_trials control the duration of the tuning procedure => set time_budget as high as possible if you prefer n_trails to play the central role.
+        n_trials = cfg['n_trials'],
+        search_alg_id='randomsearch',
+        scheduler_alg_id='ashascheduler',#'fifoscheduler'
         # objective='accuracy',
     )
 
