@@ -11,6 +11,8 @@ Install via ``pip install git+https://<PAT>:@github.com/slds-lmu/wildlife-ml.git
 using personal access token (the PAT might not be necessary if working on a private 
 machine).
 
+If you wish to install from a branch other thain `main`, just add `@<branch-name>` to the above URL (at the end).
+
 ## Execution
 
 - All relevant files can be found under `scripts`.
