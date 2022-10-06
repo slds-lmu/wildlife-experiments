@@ -6,6 +6,7 @@ import os
 import ray
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.metrics import SparseCategoricalAccuracy
 from typing import Dict, Final
 from wildlifeml.data import subset_dataset
 from wildlifeml.training.trainer import WildlifeTrainer, WildlifeTuningTrainer
@@ -25,6 +26,19 @@ from wildlifeml.utils.io import (
     save_as_csv
 )
 from wildlifeml.utils.misc import flatten_list
+
+from wildlifeml.utils.metrics import (
+    SparseCategoricalRecall,
+    SparseCategoricalPrecision, 
+    SparseCategoricalF1
+)
+
+eval_metrics = [
+    SparseCategoricalAccuracy(name='accuracy'),
+    SparseCategoricalRecall(name='recall', average='macro'), 
+    SparseCategoricalPrecision(name='precision', average='macro'), 
+    SparseCategoricalF1(name='f1', average='macro'),
+]
 
 N_GPU = len(os.environ['CUDA_VISIBLE_DEVICES'])
 N_CPU: Final[int] = 16
@@ -98,14 +112,14 @@ def main(repo_dir: str, experiment: str):
         transfer_callbacks=None,
         finetune_callbacks=None,
         num_workers=cfg['num_workers'],
-        eval_metrics=cfg['eval_metrics'],
+        eval_metrics=eval_metrics,#cfg['eval_metrics'],
         resources_per_trial={'cpu': 4, 'gpu': N_GPU},
         max_concurrent_trials=1,
         time_budget=3600, # both time_budget & n_trials control the duration of the tuning procedure => set time_budget as high as possible if you prefer n_trails to play the central role.
         n_trials = cfg['n_trials'],
         search_alg_id='randomsearch',
         scheduler_alg_id='ashascheduler',#'fifoscheduler'
-        # objective='accuracy',
+        objective='recall',
     )
 
     evaluator_is = Evaluator(
@@ -260,7 +274,7 @@ def main(repo_dir: str, experiment: str):
             transfer_callbacks=None,
             finetune_callbacks=None,
             num_workers=cfg['num_workers'],
-            eval_metrics=cfg['eval_metrics'],
+            eval_metrics=eval_metrics,#cfg['eval_metrics'],
         )
         trainer_untuned_random = WildlifeTrainer(
             loss_func=keras.losses.SparseCategoricalCrossentropy(),
@@ -273,7 +287,7 @@ def main(repo_dir: str, experiment: str):
             transfer_callbacks=None,
             finetune_callbacks=None,
             num_workers=cfg['num_workers'],
-            eval_metrics=cfg['eval_metrics'],
+            eval_metrics=eval_metrics,#cfg['eval_metrics'],
         )
 
         print('---> Training on wildlife data')
@@ -351,7 +365,7 @@ def main(repo_dir: str, experiment: str):
             transfer_callbacks=None,
             finetune_callbacks=None,
             num_workers=cfg['num_workers'],
-            eval_metrics=cfg['eval_metrics'],
+            eval_metrics=eval_metrics,#cfg['eval_metrics'],
             pretraining_checkpoint=os.path.join(
                 cfg['data_dir'], cfg['pretraining_ckpt']
             )
