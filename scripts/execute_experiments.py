@@ -35,9 +35,9 @@ from wildlifeml.utils.metrics import (
 
 eval_metrics = [
     SparseCategoricalAccuracy(name='accuracy'),
-    SparseCategoricalRecall(name='recall', average='macro'), 
-    SparseCategoricalPrecision(name='precision', average='macro'), 
-    SparseCategoricalF1(name='f1', average='macro'),
+    SparseCategoricalRecall(name='recall'), 
+    SparseCategoricalPrecision(name='precision'), 
+    SparseCategoricalF1(name='f1'),
 ]
 
 N_GPU = len(os.environ['CUDA_VISIBLE_DEVICES'])
