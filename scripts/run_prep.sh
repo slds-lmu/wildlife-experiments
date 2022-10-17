@@ -1,7 +1,7 @@
 #!/bin/bash
 
 GPUNAME=$1
-REPODIR=${2:-'/home/wimmerl/projects/wildlife-experiments/'}
+REPODIR=${2:-'/home/charrakho/projects/wildlife-experiments/'}
 ROOTDIR=${3:-'/common/bothmannl/'}
 IMGDIR=${4:-'wildlife_images/usecase2/original_images/'}
 

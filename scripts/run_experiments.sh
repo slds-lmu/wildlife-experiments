@@ -2,7 +2,7 @@
 
 GPUNAME=$1
 EXPERIMENT=$2
-REPODIR=${3:-'/home/wimmerl/projects/wildlife-experiments/'}
+REPODIR=${3:-'/home/charrakho/projects/wildlife-experiments/'}
 if [[ -z $GPUNAME ]]
 then
     echo `date`" - Missing mandatory arguments: GPU name. "

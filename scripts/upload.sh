@@ -12,4 +12,4 @@ rsync -auv \
 --exclude logs \
 --max-size=50m \
 . \
-wimmerl@gpuserver.stat.uni-muenchen.de:projects/wildlife-experiments
+charrakho@gpuserver.stat.uni-muenchen.de:projects/wildlife-experiments
