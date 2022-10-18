@@ -1,15 +1,15 @@
 # wildlife-experiments
 
-## Requirements
+## Installation
 
-Either install with `requirements.txt` or `environment.yml` (e.g., via `conda`).
+- Clone the current repo into your local machine: `git clone https://github.com/slds-lmu/wildlife-experiments.git`
+- Install via the required dependencies either with `requirements.txt` or `environment.yml`: `conda env create -f environment.yml`
+  - :bulb: `environment.yml` creates a conda env and installs the dependencies on it. 
+  - :bulb: The created env is called `wex`, but, you can costomize its name by editing the first line of `environment.yml`.
+- Install the `wildlife-ml` package on the `wex`: `pip install git+https://<PAT>:@github.com/slds-lmu/wildlife-ml.git`
+  - :bulb: The PAT (i.e., personal access token) might not be necessary if working on a private machine. 
+  - :bulb: If you wish to install `wildlife-ml` from a branch other than `main` then use: `pip install git+https://<PAT>:@github.com/slds-lmu/wildlife-ml.git@<branch-name>`
 
-## Source repo
-Currently living on GitHub.
-
-Install via ``pip install git+https://<PAT>:@github.com/slds-lmu/wildlife-ml.git``, 
-using personal access token (the PAT might not be necessary if working on a private 
-machine).
 
 ## Execution
 
@@ -22,4 +22,4 @@ machine).
     - In addition to the GPU, specify the experiment you wish to run.
     - Again, there is an optional file path argument.
     - E.g., `bash run_experiments.sh 1 insample_perf`
-- **Note**: You should re-run `run_prep.sh` before executing new experiments (for example, active learning modifies some used files).
+:bulb: Re-run `run_prep.sh` before executing new experiments (for example, active learning modifies some used files).
