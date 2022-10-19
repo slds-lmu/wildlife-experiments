@@ -6,14 +6,13 @@ import os
 import ray
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
-from typing import Dict, Final
+from typing import Dict, Final, List
 from wildlifeml.data import subset_dataset
 from wildlifeml.training.trainer import WildlifeTrainer, WildlifeTuningTrainer
 from wildlifeml.training.active import ActiveLearner
 from wildlifeml.training.evaluator import Evaluator
 from wildlifeml.utils.datasets import (
     separate_empties,
-    map_preds_to_img,
     map_bbox_to_img,
     do_stratified_splitting
 )
@@ -26,8 +25,19 @@ from wildlifeml.utils.io import (
 )
 from wildlifeml.utils.misc import flatten_list
 
-N_GPU = len(os.environ['CUDA_VISIBLE_DEVICES'])
-N_CPU: Final[int] = 16
+from wildlifeml.utils.metrics import (
+    SparseCategoricalRecall,
+    SparseCategoricalPrecision, 
+    SparseCategoricalF1
+)
+
+EVAL_METRICS: Final[List] = [
+    'accuracy',
+    SparseCategoricalRecall(name='recall'), 
+    SparseCategoricalPrecision(name='precision'), 
+    SparseCategoricalF1(name='f1'),
+]
+
 THRESH_PROGRESSIVE: Final[float] = 0.5
 THRESH_NOROUZZADEH: Final[float] = 0.9
 
@@ -45,6 +55,9 @@ def main(repo_dir: str, experiment: str):
 
     cfg: Final[Dict] = load_json(os.path.join(repo_dir, 'configs/cfg.json'))
     os.makedirs(cfg['result_dir'], exist_ok=True)
+    
+    n_gpu: Final[int] = len(os.environ['CUDA_VISIBLE_DEVICES'])
+    n_cpu: Final[int] = cfg['num_workers']
 
     # Get metadata
 
@@ -81,13 +94,20 @@ def main(repo_dir: str, experiment: str):
         cfg['data_dir'], 'dataset_oos_test.pkl')
     )
 
+    search_space = {
+        'backbone': ray.tune.choice(
+            ['resnet50', 'inceptionresnetv2', 'vgg19', 'xception', 'densenet201']
+        ),
+        'transfer_learning_rate': ray.tune.loguniform(1e-4, 1e-2),
+        'finetune_learning_rate': ray.tune.loguniform(1e-4, 1e-2),
+        'batch_size': ray.tune.randint(10, 200),
+    }
+
+    # Both time_budget & n_trials control the duration of the tuning procedure
+    # => set time_budget as high as possible if you prefer to control via n_trails.
+
     trainer = WildlifeTuningTrainer(
-        search_space={
-            'backbone': ray.tune.choice(['resnet50']),
-            'transfer_learning_rate': ray.tune.choice([1e-4]),
-            'finetune_learning_rate': ray.tune.choice([1e-4]),
-            'batch_size': ray.tune.choice([32])
-        },
+        search_space=search_space,
         loss_func=keras.losses.SparseCategoricalCrossentropy(),
         num_classes=cfg['num_classes'],
         transfer_epochs=cfg['transfer_epochs'],
@@ -98,13 +118,17 @@ def main(repo_dir: str, experiment: str):
         transfer_callbacks=None,
         finetune_callbacks=None,
         num_workers=cfg['num_workers'],
-        eval_metrics=cfg['eval_metrics'],
-        resources_per_trial={'cpu': 4, 'gpu': N_GPU},
-        max_concurrent_trials=1,
-        time_budget=10,
-        # search_alg_id='randomsearch',
-        # scheduler_alg_id='fifoscheduler',
-        # objective='accuracy',
+        eval_metrics=EVAL_METRICS,
+        resources_per_trial={
+            'cpu': n_cpu // cfg['max_concurrent_trials'],
+            'gpu': n_gpu // cfg['max_concurrent_trials']
+        },
+        max_concurrent_trials=cfg['max_concurrent_trials'],
+        time_budget=cfg['time_budget'],
+        n_trials=cfg['n_trials'],
+        search_alg_id=cfg['search_alg_id'],
+        scheduler_alg_id=cfg['scheduler_alg_id'],
+        objective='recall',
     )
 
     evaluator_is = Evaluator(
@@ -247,47 +271,38 @@ def main(repo_dir: str, experiment: str):
 
     elif experiment == 'insample_tuning':
 
-        # TODO: set hyperparams appropriately
-        trainer_untuned_default = WildlifeTrainer(
+        trainer_untuned = WildlifeTrainer(
+            batch_size=search_space['batch_size'].sample(),
             loss_func=keras.losses.SparseCategoricalCrossentropy(),
             num_classes=cfg['num_classes'],
             transfer_epochs=cfg['transfer_epochs'],
             finetune_epochs=cfg['finetune_epochs'],
-            transfer_optimizer=Adam(),
-            finetune_optimizer=Adam(),
+            transfer_optimizer=Adam(
+                learning_rate=search_space['transfer_learning_rate'].sample()
+            ),
+            finetune_optimizer=Adam(
+                learning_rate=search_space['finetune_learning_rate'].sample()
+            ),
             finetune_layers=cfg['finetune_layers'],
+            model_backbone=search_space['model_backbone'].sample(),
             transfer_callbacks=None,
             finetune_callbacks=None,
             num_workers=cfg['num_workers'],
-            eval_metrics=cfg['eval_metrics'],
-        )
-        trainer_untuned_random = WildlifeTrainer(
-            loss_func=keras.losses.SparseCategoricalCrossentropy(),
-            num_classes=cfg['num_classes'],
-            transfer_epochs=cfg['transfer_epochs'],
-            finetune_epochs=cfg['finetune_epochs'],
-            transfer_optimizer=Adam(),
-            finetune_optimizer=Adam(),
-            finetune_layers=cfg['finetune_layers'],
-            transfer_callbacks=None,
-            finetune_callbacks=None,
-            num_workers=cfg['num_workers'],
-            eval_metrics=cfg['eval_metrics'],
+            eval_metrics=EVAL_METRICS,
+            pretraining_checkpoint=os.path.join(
+                cfg['data_dir'], cfg['pretraining_ckpt']
+            ),
         )
 
         print('---> Training on wildlife data')
         # TODO think about necessity of val data here (tuning trainer trained on both)
-        trainer_untuned_default.fit(
-            train_dataset=dataset_is_train, val_dataset=dataset_is_val
-        )
-        trainer_untuned_random.fit(
+        trainer_untuned.fit(
             train_dataset=dataset_is_train, val_dataset=dataset_is_val
         )
 
         print('---> Evaluating on test data')
         results_tuning = {
-            'untuned_default': evaluator_is.evaluate(trainer_untuned_default),
-            'untuned_random': evaluator_is.evaluate(trainer_untuned_random),
+            'untuned_default': evaluator_is.evaluate(trainer_untuned),
         }
 
         save_as_json(
@@ -339,18 +354,19 @@ def main(repo_dir: str, experiment: str):
         # trainer_pretraining.fit(dataset_is_trainval, dataset_is_test)
 
         trainer_active = WildlifeTrainer(
-            loss_func=keras.losses.SparseCategoricalCrossentropy(),
             batch_size=cfg['batch_size'],
+            loss_func=keras.losses.SparseCategoricalCrossentropy(),
             num_classes=cfg['num_classes'],
             transfer_epochs=cfg['transfer_epochs'],
             finetune_epochs=cfg['finetune_epochs'],
-            transfer_optimizer=Adam(),
-            finetune_optimizer=Adam(),
+            transfer_optimizer=Adam(learning_rate=cfg['transfer_learning_rate']),
+            finetune_optimizer=Adam(learning_rate=cfg['finetune_learning_rate']),
             finetune_layers=cfg['finetune_layers'],
+            model_backbone=cfg['model_backbone'],
             transfer_callbacks=None,
             finetune_callbacks=None,
             num_workers=cfg['num_workers'],
-            eval_metrics=cfg['eval_metrics'],
+            eval_metrics=EVAL_METRICS,
             pretraining_checkpoint=os.path.join(
                 cfg['data_dir'], cfg['pretraining_ckpt']
             )
@@ -408,7 +424,6 @@ def main(repo_dir: str, experiment: str):
 
     else:
         raise IOError('Unknown experiment')
-
 
 if __name__ == '__main__':
     main()
