@@ -17,10 +17,10 @@ else
 fi
 
 python scripts/prep_config.py \
---repo_dir=home/$USERNAME/projects/wildlife-experiments/ \
+--repo_dir=/home/$USERNAME/projects/wildlife-experiments/ \
 --root_dir=$ROOTDIR \
 --img_dir=$IMGDIR && \
 python scripts/prep_data.py \
---repo_dir=home/$USERNAME/projects/wildlife-experiments/ && \
+--repo_dir=/home/$USERNAME/projects/wildlife-experiments/ && \
 python scripts/prep_experiments.py \
---repo_dir=home/$USERNAME/projects/wildlife-experiments/
+--repo_dir=/home/$USERNAME/projects/wildlife-experiments/
