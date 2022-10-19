@@ -11,6 +11,8 @@
   - :bulb: If you wish to install `wildlife-ml` from a branch other than `main` then use: `pip install git+https://<PAT>:@github.com/slds-lmu/wildlife-ml.git@<branch-name>`
 
 
+If you wish to install from a branch other thain `main`, just add `@<branch-name>` to the above URL (at the end).
+
 ## Execution
 
 - All relevant files can be found under `scripts`.
