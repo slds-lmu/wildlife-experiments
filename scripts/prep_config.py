@@ -44,7 +44,7 @@ def main(repo_dir: str, root_dir: str, img_dir: str):
         'al_iterations': 1,
         'pretraining_ckpt': 'pretrained_weights',
         'n_trials': 5,
-        'time_budget': 360000, #100hours
+        'time_budget': 360000,  # 100hours
         'max_concurrent_trials': 4,
         'search_alg_id': 'randomsearch',
         'scheduler_alg_id': 'ashascheduler',

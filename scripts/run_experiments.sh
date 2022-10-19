@@ -2,7 +2,7 @@
 
 GPUNAME=$1
 EXPERIMENT=$2
-REPODIR=${3:-'/home/charrakho/projects/wildlife-experiments/'}
+USERNAME=$3
 if [[ -z $GPUNAME ]]
 then
     echo `date`" - Missing mandatory arguments: GPU name. "
@@ -15,5 +15,5 @@ else
 fi
 
 python scripts/execute_experiments.py \
---repo_dir=$REPODIR \
+--repo_dir=home/$USERNAME/projects/wildlife-experiments/ \
 --experiment=$EXPERIMENT

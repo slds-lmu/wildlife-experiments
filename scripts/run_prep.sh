@@ -1,7 +1,7 @@
 #!/bin/bash
 
 GPUNAME=$1
-REPODIR=${2:-'/home/charrakho/projects/wildlife-experiments/'}
+USERNAME=$2
 ROOTDIR=${3:-'/common/bothmannl/'}
 IMGDIR=${4:-'wildlife_images/usecase2/original_images/'}
 
@@ -17,8 +17,10 @@ else
 fi
 
 python scripts/prep_config.py \
---repo_dir=$REPODIR \
+--repo_dir=home/$USERNAME/projects/wildlife-experiments/ \
 --root_dir=$ROOTDIR \
 --img_dir=$IMGDIR && \
-python scripts/prep_data.py --repo_dir=$REPODIR && \
-python scripts/prep_experiments.py --repo_dir=$REPODIR
+python scripts/prep_data.py \
+--repo_dir=home/$USERNAME/projects/wildlife-experiments/ && \
+python scripts/prep_experiments.py \
+--repo_dir=home/$USERNAME/projects/wildlife-experiments/
