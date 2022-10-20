@@ -137,3 +137,4 @@ ray_results/
 *.csv#
 data/pretrained*
 active/
+models/
