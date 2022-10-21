@@ -28,7 +28,7 @@ def main(repo_dir: str, root_dir: str, img_dir: str):
         'md_batchsize': 32,
         'random_state': 123,
         'splits': (0.7, 0.15, 0.15),
-        'batch_size': 128,
+        'batch_size': 64,
         'num_classes': 8,
         'transfer_epochs': 1,
         'finetune_epochs': 1,
