@@ -91,32 +91,49 @@ def main(repo_dir: str, experiment: str):
     # we should probably keep # finetuning epochs as low as possible, even 0 if perf is
     # sufficient, bc this will blow up computation time
     # in general: just trial and error until we have a good config
-    trainer = WildlifeTrainer(
-        batch_size=cfg['batch_size'],
-        loss_func=keras.losses.SparseCategoricalCrossentropy(),
-        num_classes=cfg['num_classes'],
-        transfer_epochs=1,  # cfg['transfer_epochs'],
-        finetune_epochs=0,  # cfg['finetune_epochs'],
-        transfer_optimizer=Adam(learning_rate=cfg['transfer_learning_rate']),
-        finetune_optimizer=Adam(learning_rate=cfg['finetune_learning_rate']),
-        finetune_layers=cfg['finetune_layers'],
-        model_backbone=cfg['model_backbone'],
-        transfer_callbacks=None,
-        finetune_callbacks=None,
-        num_workers=cfg['num_workers'],
-        eval_metrics=EVAL_METRICS,
-    )
+
+    trainer_args: Dict = {
+        'batch_size': cfg['batch_size'],
+        'loss_func': keras.losses.SparseCategoricalCrossentropy(),
+        'num_classes': cfg['num_classes'],
+        'transfer_epochs': 1,  # cfg['transfer_epochs'],
+        'finetune_epochs': 0,  # cfg['finetune_epochs'],
+        'transfer_optimizer': Adam(learning_rate=cfg['transfer_learning_rate']),
+        'finetune_optimizer': Adam(learning_rate=cfg['finetune_learning_rate']),
+        'finetune_layers': cfg['finetune_layers'],
+        'model_backbone': cfg['model_backbone'],
+        'transfer_callbacks': None,
+        'finetune_callbacks': None,
+        'num_workers': cfg['num_workers'],
+        'eval_metrics': EVAL_METRICS,
+    }
+
+    # trainer = WildlifeTrainer(
+    #     batch_size=cfg['batch_size'],
+    #     loss_func=keras.losses.SparseCategoricalCrossentropy(),
+    #     num_classes=cfg['num_classes'],
+    #     transfer_epochs=1,  # cfg['transfer_epochs'],
+    #     finetune_epochs=0,  # cfg['finetune_epochs'],
+    #     transfer_optimizer=Adam(learning_rate=cfg['transfer_learning_rate']),
+    #     finetune_optimizer=Adam(learning_rate=cfg['finetune_learning_rate']),
+    #     finetune_layers=cfg['finetune_layers'],
+    #     model_backbone=cfg['model_backbone'],
+    #     transfer_callbacks=None,
+    #     finetune_callbacks=None,
+    #     num_workers=cfg['num_workers'],
+    #     eval_metrics=EVAL_METRICS,
+    # )
     evaluator_is = Evaluator(
         label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
         detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
         dataset=dataset_is_test,
-        num_classes=trainer.get_num_classes(),
+        num_classes=cfg['num_classes'],
     )
     evaluator_oos = Evaluator(
         label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
         detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
         dataset=dataset_oos_test,
-        num_classes=trainer.get_num_classes(),
+        num_classes=cfg['num_classes'],
     )
 
     # ----------------------------------------------------------------------------------
@@ -126,7 +143,7 @@ def main(repo_dir: str, experiment: str):
     # PERFORMANCE ----------------------------------------------------------------------
 
     if experiment == 'insample_perf':
-        trainer_perf_is = deepcopy(trainer)
+        trainer_perf_is = WildlifeTrainer(**trainer_args)
         print('---> Training on wildlife data')
         trainer_perf_is.fit(train_dataset=dataset_is_train, val_dataset=dataset_is_val)
         print('---> Evaluating on test data')
@@ -202,7 +219,7 @@ def main(repo_dir: str, experiment: str):
 
             # Compute confusion for entire pipeline
 
-            trainer_empty = deepcopy(trainer)
+            trainer_empty = WildlifeTrainer(**trainer_args)
             print('---> Training on wildlife data')
             trainer_empty.fit(
                 train_dataset=dataset_train_thresh, val_dataset=dataset_val_thresh
@@ -247,7 +264,7 @@ def main(repo_dir: str, experiment: str):
 
     elif experiment == 'oosample_perf':
         print('---> Training on in-sample data')
-        trainer_perf_oos = deepcopy(trainer)
+        trainer_perf_oos = WildlifeTrainer(**trainer_args)
         trainer_perf_oos.fit(train_dataset=dataset_is_train, val_dataset=dataset_is_val)
         print('---> Evaluating on out-of-sample data')
         results_perf_passive = evaluator_oos.evaluate(trainer_perf_oos)
@@ -262,7 +279,7 @@ def main(repo_dir: str, experiment: str):
     # TODO find good settings for AL
     elif experiment == 'oosample_active':
 
-        trainer_pretraining = deepcopy(trainer)
+        trainer_pretraining = WildlifeTrainer(**trainer_args)
         trainer_pretraining.finetune_callbacks = keras.callbacks.ModelCheckpoint(
             filepath=os.path.join(cfg['data_dir'], cfg['pretraining_ckpt']),
             save_weights_only=True,
@@ -289,7 +306,8 @@ def main(repo_dir: str, experiment: str):
         )
 
         for trainer_obj, mode in zip(
-                [trainer_active, deepcopy(trainer)], ['warmstart', 'coldstart']
+                [trainer_active, WildlifeTrainer(**trainer_args)],
+                ['warmstart', 'coldstart']
         ):
 
             learner = ActiveLearner(
