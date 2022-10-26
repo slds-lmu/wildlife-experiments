@@ -108,21 +108,6 @@ def main(repo_dir: str, experiment: str):
         'eval_metrics': EVAL_METRICS,
     }
 
-    # trainer = WildlifeTrainer(
-    #     batch_size=cfg['batch_size'],
-    #     loss_func=keras.losses.SparseCategoricalCrossentropy(),
-    #     num_classes=cfg['num_classes'],
-    #     transfer_epochs=1,  # cfg['transfer_epochs'],
-    #     finetune_epochs=0,  # cfg['finetune_epochs'],
-    #     transfer_optimizer=Adam(learning_rate=cfg['transfer_learning_rate']),
-    #     finetune_optimizer=Adam(learning_rate=cfg['finetune_learning_rate']),
-    #     finetune_layers=cfg['finetune_layers'],
-    #     model_backbone=cfg['model_backbone'],
-    #     transfer_callbacks=None,
-    #     finetune_callbacks=None,
-    #     num_workers=cfg['num_workers'],
-    #     eval_metrics=EVAL_METRICS,
-    # )
     evaluator_is = Evaluator(
         label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
         detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),

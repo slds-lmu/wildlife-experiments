@@ -127,6 +127,5 @@ dependencies:
     - tqdm==4.64.0
     - typing-extensions==4.4.0
     - virtualenv==20.16.6
-    - wildlifeml==0.1.0
 prefix: /home/wimmerl/miniconda2/envs/wildlife
 
