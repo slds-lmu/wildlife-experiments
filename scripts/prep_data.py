@@ -3,7 +3,7 @@
 import click
 import os
 from typing import Dict, Final
-from wildlifeml import MegaDetector
+from wildlifeml.preprocessing.megadetector import MegaDetector
 from wildlifeml.data import BBoxMapper
 from wildlifeml.utils.io import load_csv_dict, save_as_csv, load_json, save_as_json
 

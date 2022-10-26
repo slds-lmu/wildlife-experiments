@@ -15,5 +15,5 @@ else
 fi
 
 python scripts/execute_experiments.py \
---repo_dir=home/$USERNAME/projects/wildlife-experiments/ \
+--repo_dir=/home/$USERNAME/projects/wildlife-experiments/ \
 --experiment=$EXPERIMENT
