@@ -271,32 +271,22 @@ def main(repo_dir: str, experiment: str):
         )
         trainer_pretraining.fit(dataset_is_trainval, dataset_is_test)
 
-        trainer_active = WildlifeTrainer(
-            batch_size=cfg['batch_size'],
-            loss_func=keras.losses.SparseCategoricalCrossentropy(),
-            num_classes=cfg['num_classes'],
-            transfer_epochs=cfg['transfer_epochs'],
-            finetune_epochs=cfg['finetune_epochs'],
-            transfer_optimizer=Adam(learning_rate=cfg['transfer_learning_rate']),
-            finetune_optimizer=Adam(learning_rate=cfg['finetune_learning_rate']),
-            finetune_layers=cfg['finetune_layers'],
-            model_backbone=cfg['model_backbone'],
-            transfer_callbacks=None,
-            finetune_callbacks=None,
-            num_workers=cfg['num_workers'],
-            eval_metrics=EVAL_METRICS,
-            pretraining_checkpoint=os.path.join(
-                cfg['data_dir'], cfg['pretraining_ckpt']
-            )
+        trainer_args_pretraining = dict(
+            {
+                'pretraining_checkpoint': os.path.join(
+                    cfg['data_dir'], cfg['pretraining_ckpt']
+                )
+            },
+            **trainer_args
         )
 
-        for trainer_obj, mode in zip(
-                [trainer_active, WildlifeTrainer(**trainer_args)],
-                ['warmstart', 'coldstart']
+        for args, mode in zip(
+                [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
         ):
 
-            learner = ActiveLearner(
-                trainer=trainer_obj,
+            trainer = WildlifeTrainer(**args)
+            active_learner = ActiveLearner(
+                trainer=trainer,
                 pool_dataset=dataset_oos_train,
                 label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
                 empty_class_id=load_json(os.path.join(
@@ -315,8 +305,8 @@ def main(repo_dir: str, experiment: str):
             print('---> Running initial AL iteration')
             if os.path.exists(os.path.join(cfg['active_dir'], '.activecache.json')):
                 os.remove(os.path.join(cfg['active_dir'], '.activecache.json'))
-            learner.run()
-            learner.do_fresh_start = False
+            active_learner.run()
+            active_learner.do_fresh_start = False
 
             for i in range(cfg['al_iterations']):
                 print(f'---> Starting AL iteration {i + 1}')
@@ -333,9 +323,9 @@ def main(repo_dir: str, experiment: str):
                     os.path.join(cfg['active_dir'], 'active_labels.csv')
                 )
                 print('---> Supplied fresh labeled data')
-                learner.run()
+                active_learner.run()
 
-            results = load_json(learner.test_logfile_path)
+            results = load_json(active_learner.test_logfile_path)
             save_as_json(
                 results,
                 os.path.join(cfg['result_dir'], f'results_oosample_active_{mode}.json')
