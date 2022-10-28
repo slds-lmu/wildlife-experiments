@@ -61,7 +61,7 @@ def main(repo_dir: str, experiment: str):
     }
     stations_dict = {
         k: {'station': v}
-        for k, v in load_csv(os.path.join(cfg['data_dir'], cfg['meta_file']))
+        for k, v in load_csv(os.path.join(cfg['data_dir'], 'stations.csv'))
     }
 
     # Get truly empty images

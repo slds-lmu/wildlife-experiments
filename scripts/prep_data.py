@@ -27,7 +27,7 @@ def main(repo_dir: str):
     # Run MegaDetector
     if not os.path.exists(os.path.join(cfg['data_dir'], cfg['detector_file'])):
         md = MegaDetector(
-            batch_size=cfg['md_batchsize'], confidence_threshold=['md_conf']
+            batch_size=cfg['md_batchsize'], confidence_threshold=cfg['md_conf']
         )
         md.predict_directory(
             directory=os.path.join(cfg['root_dir'], cfg['img_dir']),
@@ -35,7 +35,6 @@ def main(repo_dir: str):
         )
 
     # Create mapping from img to bboxes
-    mapping_file = os.path.join(cfg['data_dir'], 'bbox_map.json')
     mapper = BBoxMapper(os.path.join(cfg['data_dir'], cfg['detector_file']))
     key_map = mapper.get_keymap()
 
@@ -55,7 +54,7 @@ def main(repo_dir: str):
         [(k, v) for k, v in station_dict.items()],
         os.path.join(cfg['data_dir'], 'stations.csv'),
     )
-    save_as_json(key_map, mapping_file)
+    save_as_json(key_map, os.path.join(cfg['data_dir'], cfg['mapping_file']))
 
 
 if __name__ == '__main__':
