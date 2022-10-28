@@ -97,9 +97,15 @@ def main(repo_dir: str):
         ]
     )
 
-    _, nonempty_keys_md = separate_empties(
+    empty_keys_md, nonempty_keys_md = separate_empties(
         detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
         conf_threshold=cfg['md_conf']
+    )
+
+    empty_keys = list(
+        set(empty_keys_md).intersection(
+            set(flatten_list([v for v in mapping_dict.values()]))
+        )
     )
     nonempty_keys = list(
         set(nonempty_keys_md).intersection(
@@ -121,8 +127,19 @@ def main(repo_dir: str):
         map_bbox_to_img(k) for k in nonempty_keys
         if stations_dict[map_bbox_to_img(k)]['station'] in STATIONS_IS
     ]
+
+    empty_keys_is = [
+        map_bbox_to_img(k) for k in empty_keys
+        if stations_dict[map_bbox_to_img(k)]['station'] in STATIONS_IS
+    ]
+
     keys_oos = [
         map_bbox_to_img(k) for k in nonempty_keys
+        if stations_dict[map_bbox_to_img(k)]['station'] in STATIONS_OOS
+    ]
+
+    empty_keys_oss = [
+        map_bbox_to_img(k) for k in empty_keys
         if stations_dict[map_bbox_to_img(k)]['station'] in STATIONS_OOS
     ]
 
@@ -132,11 +149,24 @@ def main(repo_dir: str):
         meta_dict=stations_dict,
         random_state=cfg['random_state']
     )
+
+    keys_is_test = list(
+        set(keys_is_test).union(
+            set(empty_keys_is)
+        )
+    )
+
     keys_oos_train, _, keys_oos_test = do_stratified_splitting(
         img_keys=list(set(keys_oos)),
         splits=(cfg['splits'][0] + cfg['splits'][1], 0.0, cfg['splits'][2]),
         meta_dict=stations_dict,
         random_state=cfg['random_state']
+    )
+
+    keys_oos_test = list(
+        set(keys_oos_test).union(
+            set(empty_keys_oss)
+        )
     )
 
     for keyset, mode in zip(
