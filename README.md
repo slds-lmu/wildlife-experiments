@@ -21,7 +21,7 @@ This repository implements experiments and exemplary training scripts using the 
   - It provides code for 3 tasks: preparing the data ("prep") and training in standard ("train_passive") as well as active ("train_active") fashion.
   - In order to execute the code, run the corresponding bash file from your command line via `bash scripts/run_example.sh <path/to/config/file> <task>`.
   - There are two places that require custom user input:
-    - `run_example.sh` expects two arguments: the (absolute) path to the configuration file that contains all training specifications (see next step), and the task to be executed (must be one out of `prep`, `train_passive`, `train_active`).
+    - `run_example.sh` expects two arguments: the (absolute) path to the configuration file that contains all training specifications (see next step), and the task to be executed (must be one out of "prep", "train_passive", "train_active").
     - `configs/config_example.json` stores all customizable options for the exemplary code. Find examples for the required files in the folder `example_files`.
       - `label_file_train`: path to csv file with training data labels. Must consist of two columns, the first containing image names, the second image labels.
       - `label_file_test`: path to csv file like `label_file_train`.
@@ -62,5 +62,5 @@ This repository implements experiments and exemplary training scripts using the 
     - `bash run_experiments.sh <GPU> <user name> <experiment>`
       - In addition to the GPU and user name, specify the experiment you wish to run.
       - Again, there is an optional file path argument.
-      - E.g., `bash run_experiments.sh 1 insample_perf`
+      - E.g., `bash run_experiments.sh 1 wimmerl insample_perf`
 :bulb: Re-run `run_prep.sh` before executing new experiments (for example, active learning modifies some used files).
