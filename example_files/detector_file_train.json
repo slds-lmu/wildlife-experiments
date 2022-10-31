@@ -1,0 +1,28 @@
+{
+    "22207_10090979.JPG_001": {
+        "category": 1,
+        "conf": 0.9999,
+        "bbox": [
+            0.3052,
+            0.6357,
+            0.08082,
+            0.1481
+        ],
+        "file": "/common/bothmannl/wildlife_images/usecase2/original_images/22207_10090979.JPG"
+    },
+    "22207_10090979.JPG_002": {
+        "category": 1,
+        "conf": 0.3315,
+        "bbox": [
+            0.0004626,
+            0.6814,
+            0.04806,
+            0.05002
+        ],
+        "file": "/common/bothmannl/wildlife_images/usecase2/original_images/22207_10090979.JPG"
+    },
+    "18339_01050525.JPG_001": {
+        "category": -1,
+        "file": "/common/bothmannl/wildlife_images/usecase2/original_images/18339_01050525.JPG"
+    }
+}

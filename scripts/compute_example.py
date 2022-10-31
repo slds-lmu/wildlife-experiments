@@ -1,5 +1,6 @@
 """Examples of how to use the wildlifeml package."""
 
+
 import albumentations as A
 import click
 import os
@@ -29,6 +30,7 @@ from wildlifeml.utils.metrics import (
 )
 
 
+# Define metrics for evaluating predictions
 EVAL_METRICS: Final[List] = [
     'accuracy',
     SparseCategoricalRecall(name='recall'),
@@ -38,10 +40,11 @@ EVAL_METRICS: Final[List] = [
 
 
 @click.command()
-@click.option('--config_file', help='Path to config file.', required=True)
-@click.option('--task', help='Task to be run.', required=True)
+@click.option('--config_file', '-cf', help='Path to config file.', required=True)
+@click.option('--task', '-tk', help='Task to be run.', required=True)
 def main(config_file: str, task: str):
 
+    # Load file with all user-specified configurations
     cfg: Final[Dict] = load_json(config_file)
 
     # PREPARE DATA ---------------------------------------------------------------------
@@ -49,7 +52,7 @@ def main(config_file: str, task: str):
     if task == 'prep':
 
         # Prepare datasets for max 3 modi: training data to learn model on, pre-training
-        # data to warm-start model (optional), production data to predict on (optional).
+        # data to warm-start model (optional), production data to predict on (optional)
 
         label_files = [cfg['label_file_train'], cfg['label_file_test']]
         modes = ['train', 'test']
@@ -62,10 +65,17 @@ def main(config_file: str, task: str):
 
         for label_file, mode in zip(label_files, modes):
             # Create label map as a look-up for the class encoding
-            label_dict = {k: v for k, v in load_csv(label_file)}
-            class_names = sorted(list(set(label_dict.values())))
+            label_dict_original = {k: v for k, v in load_csv(label_file)}
+            class_names = sorted(list(set(label_dict_original.values())))
             label_map = {class_names[i]: i for i in range(len(class_names))}
-            save_as_json(label_map, os.path.join(cfg['data_dir'], 'label_map.json'))
+            save_as_json(
+                label_map, os.path.join(cfg['data_dir'], f'label_map_{mode}.json')
+            )
+            label_dict = {k: label_map[v] for k, v in label_dict_original}
+            save_as_csv(
+                [(k, v) for k, v in label_dict.items()],
+                os.path.join(cfg['data_dir'], f'label_file_{mode}_num.csv')
+            )
 
             # Run MegaDetector if there is no detection file already present (if such a
             # file is present, and you wish to re-run the MegaDetector anyway, you need
@@ -158,8 +168,8 @@ def main(config_file: str, task: str):
             'batch_size': cfg['batch_size'],
             'loss_func': keras.losses.SparseCategoricalCrossentropy(),
             'num_classes': cfg['num_classes'],
-            'transfer_epochs': 1,  # cfg['transfer_epochs'],
-            'finetune_epochs': 0,  # cfg['finetune_epochs'],
+            'transfer_epochs': cfg['transfer_epochs'],
+            'finetune_epochs': cfg['finetune_epochs'],
             'transfer_optimizer': Adam(learning_rate=cfg['transfer_learning_rate']),
             'finetune_optimizer': Adam(learning_rate=cfg['finetune_learning_rate']),
             'finetune_layers': cfg['finetune_layers'],
@@ -177,14 +187,14 @@ def main(config_file: str, task: str):
             )
             trainer_pretrain = WildlifeTrainer(**trainer_args)
             trainer_pretrain.finetune_callbacks = keras.callbacks.ModelCheckpoint(
-                filepath=os.path.join(cfg['data_dir'], cfg['pretraining_ckpt']),
+                filepath=os.path.join(cfg['data_dir'], 'pretraining_ckpt'),
                 save_weights_only=True,
             )
             trainer_pretrain.fit(train_dataset=dataset_pretrain)
             trainer_args_pretraining = dict(
                 {
                     'pretraining_checkpoint': os.path.join(
-                        cfg['data_dir'], cfg['pretraining_ckpt']
+                        cfg['data_dir'], 'pretraining_ckpt'
                     )
                 },
                 **trainer_args
@@ -207,8 +217,12 @@ def main(config_file: str, task: str):
             )
             # Instantiate evaluator
             evaluator = Evaluator(
-                label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
-                detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
+                label_file_path=os.path.join(
+                    cfg['data_dir'], 'label_file_test_num.csv'
+                ),
+                detector_file_path=os.path.join(
+                    cfg['data_dir'], cfg['detector_file_test']
+                ),
                 dataset=dataset_test,
                 num_classes=cfg['num_classes'],
             )
@@ -239,7 +253,7 @@ def main(config_file: str, task: str):
                 pool_dataset=dataset_train,
                 label_file_path=os.path.join(cfg['data_dir'], cfg['label_file_active']),
                 empty_class_id=load_json(os.path.join(
-                    cfg['data_dir'], 'label_map.json')
+                    cfg['data_dir'], 'label_map_train.json')
                 ).get('empty'),
                 acquisitor_name=cfg['acquisition_function'],
                 train_size=cfg['splits'][0],
@@ -258,7 +272,7 @@ def main(config_file: str, task: str):
 
             for i in range(cfg['al_iterations']):
                 print(f'---> Starting AL iteration {i + 1}')
-                if not cfg['human_annotation']:
+                if not bool(cfg['human_annotation']):
                     keys_to_label = [
                         k for k, _ in load_csv(
                             os.path.join(cfg['active_dir'], 'active_labels.csv')
