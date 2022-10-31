@@ -130,7 +130,6 @@ def main(config_file: str, task: str):
                     ]
                 ),
             )
-            breakpoint()
             save_as_pickle(
                 dataset, os.path.join(cfg['data_dir'], f'dataset_{mode}.pkl')
             )
@@ -299,6 +298,9 @@ def main(config_file: str, task: str):
                     )
                     print('---> Supplied fresh labeled data')
                     active_learner.run()
+
+            results = load_json(active_learner.test_logfile_path)
+            save_as_json(results, cfg['result_file'])
 
     else:
         raise ValueError(f'Task "{task}" not implemented.')

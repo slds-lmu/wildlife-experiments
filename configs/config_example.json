@@ -31,7 +31,7 @@
     "label_file_active": "/home/wimmerl/projects/wildlife-experiments/example_files/labels_active_learning.csv",
     "acquisition_function": "entropy",
     "active_dir": "/home/wimmerl/projects/wildlife-experiments/active/",
-    "al_iterations": 1,
+    "al_iterations": 2,
     "al_batchsize": 32,
     "human_annotation": "False"
 }
