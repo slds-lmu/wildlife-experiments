@@ -130,6 +130,7 @@ def main(config_file: str, task: str):
                     ]
                 ),
             )
+            breakpoint()
             save_as_pickle(
                 dataset, os.path.join(cfg['data_dir'], f'dataset_{mode}.pkl')
             )
@@ -162,7 +163,6 @@ def main(config_file: str, task: str):
                         subset,
                         os.path.join(cfg['data_dir'], f'dataset_t_{partition}.pkl')
                     )
-        exit()
 
     elif task in ['train_passive', 'train_active']:
 
