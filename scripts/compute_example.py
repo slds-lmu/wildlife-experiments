@@ -282,13 +282,13 @@ def main(config_file: str, task: str):
 
             for i in range(cfg['al_iterations']):
                 print(f'---> Starting AL iteration {i + 1}')
-                if not bool(cfg['human_annotation']):
+                if not eval(cfg['human_annotation']):
                     keys_to_label = [
                         k for k, _ in load_csv(
                             os.path.join(cfg['active_dir'], 'active_labels.csv')
                         )
                     ]
-                    label_dict = {k: v for k, v in load_csv(cfg['label_file_train'])}
+                    label_dict = {k: v for k, v in load_csv(os.path.join(cfg['data_dir'], f'label_file_train_num.csv'))}
                     labels_supplied = [
                         (k, v) for k, v in label_dict.items() if k in keys_to_label
                     ]
