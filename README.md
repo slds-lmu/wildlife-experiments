@@ -2,6 +2,11 @@
 
 This repository implements experiments and exemplary training scripts using the functionalities of the source repository `wildlife-ml`, which, in turn, contains code for classifying wildlife images with an active learning option.
 
+## Disclaimer
+
+- The `main` branch is protected to avoid unintended modifications.
+- Please **always** work on a local branch -- also if you only run the code, as the produced files will otherwise overwrite the original, which may cause conflicts and result in lost work.
+
 ## Installation
 
 - **This repository**: clone to your local machine via: `git clone https://github.com/slds-lmu/wildlife-experiments.git`.
