@@ -21,7 +21,11 @@ from wildlifeml.utils.io import (
     load_pickle,
     save_as_pickle
 )
-from wildlifeml.utils.datasets import separate_empties, do_stratified_splitting
+from wildlifeml.utils.datasets import (
+    separate_empties,
+    do_stratified_splitting,
+    map_bbox_to_img
+)
 from wildlifeml.utils.misc import flatten_list
 from wildlifeml.utils.metrics import (
     SparseCategoricalRecall,
@@ -71,7 +75,7 @@ def main(config_file: str, task: str):
             save_as_json(
                 label_map, os.path.join(cfg['data_dir'], f'label_map_{mode}.json')
             )
-            label_dict = {k: label_map[v] for k, v in label_dict_original}
+            label_dict = {k: label_map[v] for k, v in label_dict_original.items()}
             save_as_csv(
                 [(k, v) for k, v in label_dict.items()],
                 os.path.join(cfg['data_dir'], f'label_file_{mode}_num.csv')
@@ -113,7 +117,9 @@ def main(config_file: str, task: str):
                 keys=nonempty_keys,
                 image_dir=cfg['img_dir'],
                 detector_file_path=detector_file_path,
-                label_file_path=label_file,
+                label_file_path=os.path.join(
+                    cfg['data_dir'], f'label_file_{mode}_num.csv'
+                ),
                 bbox_map=bbox_map,
                 batch_size=cfg['batch_size'],
                 augmentation=A.Compose(
@@ -133,12 +139,16 @@ def main(config_file: str, task: str):
                 # If extra metadata for splitting are provided, create dict (even if
                 # not, data are always stratified by class).
                 if len(cfg['meta_file_train']) > 0:
-                    meta_dict = load_csv(cfg['meta_file_train'])
+                    meta_dict = {
+                        k: {'meta_var': v} for k, v in load_csv(cfg['meta_file_train'])
+                    }
                 else:
-                    meta_dict = label_dict
+                    meta_dict = {k: {'meta_var': v} for k, v in label_dict.items()}
                 save_as_json(meta_dict, os.path.join(cfg['data_dir'], 'meta_dict.json'))
+                keys_all = list(set(nonempty_keys))
+                keys_all_img = [map_bbox_to_img(k) for k in keys_all]
                 keys_train, _, keys_val = do_stratified_splitting(
-                    img_keys=list(set(nonempty_keys)),
+                    img_keys=list(set(keys_all_img)),
                     splits=cfg['splits'],
                     meta_dict=meta_dict,
                     random_state=cfg['random_state']
@@ -152,6 +162,7 @@ def main(config_file: str, task: str):
                         subset,
                         os.path.join(cfg['data_dir'], f'dataset_t_{partition}.pkl')
                     )
+        exit()
 
     elif task in ['train_passive', 'train_active']:
 

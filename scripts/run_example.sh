@@ -15,5 +15,5 @@ then
 fi
 
 python scripts/compute_example.py \
--cf=/home/wimmerl/projects/wildlife-experiments/configs/config_example.json \
--tk=prep
+-cf=$CONFIGFILE \
+-tk=$TASK
