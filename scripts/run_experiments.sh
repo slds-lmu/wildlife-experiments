@@ -1,8 +1,8 @@
 #!/bin/bash
 
 GPUNAME=$1
-EXPERIMENT=$2
-USERNAME=$3
+USERNAME=$2
+EXPERIMENT=$3
 if [[ -z $GPUNAME ]]
 then
     echo `date`" - Missing mandatory arguments: GPU name. "
