@@ -41,12 +41,6 @@ STATIONS_IS: Final[List] = [
     '6234_2For'
 ]
 STATIONS_OOS: Final[List] = [
-    '5923_3For',
-    '6137_4For',
-    '5938_3For',
-    '8130_2_F',
-    '5837_4For',
-    '6234_2For',
     '7143_4For',
     '7446_1For',
     '6035_3For',
