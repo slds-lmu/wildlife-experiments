@@ -270,6 +270,7 @@ def main(config_file: str, task: str):
                 test_dataset=dataset_test,
                 test_logfile_path=cfg['result_file'],
                 meta_dict=load_json(os.path.join(cfg['data_dir'], 'meta_dict.json')),
+                al_batch_size=cfg['al_batch_size'],
                 active_directory=cfg['active_dir'],
                 state_cache=os.path.join(cfg['active_dir'], '.activecache.json')
             )
@@ -288,7 +289,11 @@ def main(config_file: str, task: str):
                             os.path.join(cfg['active_dir'], 'active_labels.csv')
                         )
                     ]
-                    label_dict = {k: v for k, v in load_csv(os.path.join(cfg['data_dir'], f'label_file_train_num.csv'))}
+                    label_dict = {
+                        k: v for k, v in load_csv(os.path.join(
+                            cfg['data_dir'], f'label_file_train_num.csv')
+                        )
+                    }
                     labels_supplied = [
                         (k, v) for k, v in label_dict.items() if k in keys_to_label
                     ]

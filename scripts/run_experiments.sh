@@ -1,7 +1,7 @@
 #!/bin/bash
 
 GPUNAME=$1
-USERNAME=$2
+PERSONALFOLDER=$2
 EXPERIMENT=$3
 if [[ -z $GPUNAME ]]
 then
@@ -15,5 +15,5 @@ else
 fi
 
 python scripts/execute_experiments.py \
---repo_dir=/home/$USERNAME/projects/wildlife-experiments/ \
+--repo_dir=$PERSONALFOLDER/wildlife-experiments/ \
 --experiment=$EXPERIMENT

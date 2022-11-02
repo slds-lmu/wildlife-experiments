@@ -9,7 +9,7 @@ This repository implements experiments and exemplary training scripts using the 
 
 ## Installation
 
-- **This repository**: clone to your local machine via: `git clone https://github.com/slds-lmu/wildlife-experiments.git`.
+- **This repository**: clone to your local machine via: `git clone git@github.com:slds-lmu/wildlife-experiments.git`.
 - **Virtual environment**: this might be a little iffy due to the use of `tensorflow`, depending on the settings of your machine (especially if you plan to work with GPUs). We provide a environment that works for `CUDA` in version 11.1, but you might need to use different versions of `tensorflow` / `tensorflow-gpu`.
   - :bulb: For example, using `conda`, run `conda env create -f environment.yml`.
   - :bulb: `environment.yml` creates a `conda` environment and installs the dependencies on it. 
@@ -24,11 +24,11 @@ This repository implements experiments and exemplary training scripts using the 
 - For **EXEMPLARY USE**:
   - `compute_example.py` contains examples of how to use this repository.
   - It provides code for 3 tasks: preparing the data ("prep") and training in standard ("train_passive") as well as active ("train_active") fashion.
-  - In order to execute the code, run the corresponding bash file from your command line via `bash scripts/run_example.sh <path/to/config/file> <task>`.
+  - In order to execute the code, run the corresponding bash file (the sole purpose of which is to execute the code in `compute_example.py` with appropriate settings) from your command line via `bash scripts/run_example.sh <path/to/config/file> <task>`, e.g., `bash scripts/run_example.sh /home/me/wildlife-experiments/configs/config_example.json prep`.
   - There are two places that require custom user input:
     - `run_example.sh` expects two arguments: the (absolute) path to the configuration file that contains all training specifications (see next step), and the task to be executed (must be one out of "prep", "train_passive", "train_active").
     - `configs/config_example.json` stores all customizable options for the exemplary code. Find examples for the required files in the folder `example_files`.
-      - `label_file_train`: path to csv file with training data labels. Must consist of two columns, the first containing image names, the second image labels.
+      - `label_file_train`: path to csv file with training data labels. Must consist of two columns, the first containing image names, the second image labels. Please note that the class of empty images must be named "empty".
       - `label_file_test`: path to csv file like `label_file_train`.
       - `label_file_pretrain`: (OPTIONAL) path to csv file like `label_file_train`. If no file shall be provided, specify the path as "".
       - `label_file_prod`: (OPTIONAL) path to csv file like `label_file_train`. If no file shall be provided, specify the path as "".
@@ -57,15 +57,18 @@ This repository implements experiments and exemplary training scripts using the 
       - `acquisition_function`: acquisition criterion used in active learning. Must be one of: "random" (random sampling), "entropy" (highest softmax entropy as a proxy of predictive uncertainty), "breakingties" (smallest gap between first- and second-largest class probability as a proxy of predictive uncertainty).
       - `active_dir`: path to directory where images and files for the annotation step in the active learning loop shall be stored.
       - `al_iterations`: number of active learning iterations.
+      - `al_batch_size`: number of images to be selected for annotation in each active learning iteration.
       - `human_annotation`: will there be an actual human labeling images during active learning? If False, labels will be iteratively fetched from `label_file_train`, simulating active learning.
 - Only for the **PAPER EXPERIMENTS**:
-  - You need to run the following files with arguments:
-    - `bash run_prep.sh <GPU> <user name>`
+  - You need to run the following files (in this order) with arguments:
+    - `bash scripts/run_prep.sh <GPU> <personal folder>`
+      - Creates necessary intermediate files, possibly runs the MegaDetector, and creates different data partitions (in-sample, out-of-sample, train/val/test splits etc.).
       - If you wish to use a GPU, enter here the number(s) of the GPUs that shall be visible to CUDA.
-      - Specify your user name on the GPU server for paths.
+      - Specify the personal folder in which the `wildlife-experiments` repository is stored (no trailing slash).
       - There are three optional file path arguments you can hand over in the specified order to override the default.
-    - `bash run_experiments.sh <GPU> <user name> <experiment>`
-      - In addition to the GPU and user name, specify the experiment you wish to run.
+    - `bash run_experiments.sh <GPU> <personal folder> <experiment>`
+      - Performs different experiments as chosen to provide evidence for the claims of the paper.
+      - In addition to the GPU and personal folder, specify the experiment you wish to run.
       - Again, there is an optional file path argument.
-      - E.g., `bash run_experiments.sh 1 wimmerl insample_perf`
-:bulb: Re-run `run_prep.sh` before executing new experiments (for example, active learning modifies some used files).
+      - E.g., `bash scripts/run_experiments.sh 1 /home/wimmerl/projects insample_perf`
+:bulb: Re-run `scripts/run_prep.sh` before executing new experiments (for example, active learning modifies some used files).
