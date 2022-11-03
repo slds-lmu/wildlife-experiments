@@ -28,6 +28,7 @@ This repository implements experiments and exemplary training scripts using the 
   - There are two places that require custom user input:
     - `run_example.sh` expects two arguments: the (absolute) path to the configuration file that contains all training specifications (see next step), and the task to be executed (must be one out of "prep", "train_passive", "train_active").
     - `configs/config_example.json` stores all customizable options for the exemplary code. Find examples for the required files in the folder `example_files`.
+      - `img_dir`: path to directory where images are stored. :exclamation: Please note: all images should be in a single directory, allocation to different datasets is done via separate files containing the respectively relevant keys (see following bullet points). This implementation follows the assumption that having distinct datasets for training, testing, etc. is a relevant use case. If you only have a single dataset, just sample the keys (image names) at random to create the following files.
       - `label_file_train`: path to csv file with training data labels. Must consist of two columns, the first containing image names, the second image labels. Please note that the class of empty images must be named "empty".
       - `label_file_test`: path to csv file like `label_file_train`.
       - `label_file_pretrain`: (OPTIONAL) path to csv file like `label_file_train`. If no file shall be provided, specify the path as "".
@@ -38,11 +39,10 @@ This repository implements experiments and exemplary training scripts using the 
       - `detector_file_prod`: (OPTIONAL) path to json file where MegaDetector results shall be stored.
       - `meta_file_train`: (OPTIONAL) csv file with additional meta data to use for stratified splitting. Must consist of two columns, the first containing image names, the second a stratification variable (e.g., camera stations).
       - `data_dir`: path to directory where intermediate data-related files shall be stored (directory must exist).
-      - `img_dir`: path to directory where images are stored.
       - `md_batchsize`: batch size for MegaDetector. Typically, 2 to the power of something to ensure adequate use of computational resources.
       - `md_conf`: confidence threshold for MegaDetector (i.e., which confidence level should the MegaDetector have in order for an image to be deemed non-empty?). Images with bounding boxes below this threshold are considered empty and excluded from further training (but included in the evaluation).
       - `batch_size`: batch size for training. Typically, 2 to the power of something to ensure adequate use of computational resources.
-      - `splits`: split ratio for train / validation split of training data. The original implementation supports a three-way split, but here only a two-way split is used. The first number refers to the train ratio, the third to the validation ratio, the second should be set to 0.
+      - `splits`: split ratio for train / validation split of training data. The original implementation supports a three-way split, but here only a two-way split is used due to the explicit specification of training and test data (i.e., rather than splitting a single dataset into three parts, we only need to split the training data into train/val). The first number refers to the train ratio, the third to the validation ratio, the second should be set to 0.
       - `random_state`: integer number to be used as random seed.
       - `num_classes`: number of classes in the data (incl. empty class).
       - `transfer_epochs`: number of epochs for transfer learning (i.e., training the linear classification head placed on top of the pre-trained feature extractor).
