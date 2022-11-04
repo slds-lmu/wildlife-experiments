@@ -58,8 +58,41 @@ def main(config_file: str, task: str):
         # Prepare datasets for max 3 modi: training data to learn model on, pre-training
         # data to warm-start model (optional), production data to predict on (optional)
 
-        label_files = [cfg['label_file_train'], cfg['label_file_test']]
-        modes = ['train', 'test']
+        # First, split training data into train/val
+        label_dict = {k: v for k, v in load_csv(cfg['label_file_train'])}
+        # If extra metadata for splitting are provided, create dict (if
+        # not, data are always stratified by class).
+        if len(cfg['meta_file_train']) > 0:
+            meta_dict = {
+                k: {'meta_var': v} for k, v in load_csv(cfg['meta_file_train'])
+            }
+        else:
+            meta_dict = {k: {'meta_var': v} for k, v in label_dict.items()}
+        keys_train, _, keys_val = do_stratified_splitting(
+            img_keys=list(set(label_dict.keys())),
+            splits=cfg['splits'],
+            meta_dict=meta_dict,
+            random_state=cfg['random_state']
+        )
+        label_dict_train = {k: v for k, v, in label_dict.items() if k in keys_train}
+        label_dict_val = {k: v for k, v, in label_dict.items() if k in keys_val}
+        save_as_csv(
+            [(k, v) for k, v in label_dict_train.items()],
+            os.path.join(cfg['data_dir'], f'label_file_t_train.csv')
+        )
+        save_as_csv(
+            [(k, v) for k, v in label_dict_val.items()],
+            os.path.join(cfg['data_dir'], f'label_file_t_val.csv')
+        )
+
+        # Prepare all necessary files
+
+        label_files = [
+            os.path.join(cfg['data_dir'], f'label_file_t_train.csv'),
+            os.path.join(cfg['data_dir'], f'label_file_t_val.csv'),
+            cfg['label_file_test']
+        ]
+        modes = ['train', 'val', 'test']
         if len(cfg['label_file_pretrain']) > 0:
             label_files.append(cfg['label_file_pretrain'])
             modes.append('pretrain')
@@ -68,6 +101,7 @@ def main(config_file: str, task: str):
             modes.append('prod')
 
         for label_file, mode in zip(label_files, modes):
+
             # Create label map as a look-up for the class encoding
             label_dict_original = {k: v for k, v in load_csv(label_file)}
             class_names = sorted(list(set(label_dict_original.values())))
@@ -81,11 +115,11 @@ def main(config_file: str, task: str):
                 os.path.join(cfg['data_dir'], f'label_file_{mode}_num.csv')
             )
 
-            # Run MegaDetector if there is no detection file already present (if such a
-            # file is present, and you wish to re-run the MegaDetector anyway, you need
-            # to remove or rename the file)
+            # Run MegaDetector if there is no detection file already present (do this
+            # step jointly for train/val)
+            effective_mode = 'train' if mode == 'val' else mode
             detector_file_path = os.path.join(
-                cfg['data_dir'], cfg[f'detector_file_{mode}']
+                cfg['data_dir'], cfg[f'detector_file_{effective_mode}']
             )
             if not os.path.exists(detector_file_path):
                 md = MegaDetector(
@@ -103,18 +137,18 @@ def main(config_file: str, task: str):
                 bbox_map, os.path.join(cfg['data_dir'], f'bbox_map_{mode}.json')
             )
 
-            # Filter non-empty images as detected by MegaDetector
-            _, nonempty_keys_md = separate_empties(
-                detector_file_path=os.path.join(detector_file_path)
-            )
-            nonempty_keys = list(
-                set(nonempty_keys_md).intersection(
-                    set(flatten_list([v for v in bbox_map.values()]))
+            # Remove keys corresponding to empty images in training & pre-training data
+            all_keys = flatten_list([bbox_map[k] for k in bbox_map.keys()])
+            if mode in ['train', 'val', 'pretrain']:
+                _, keys_nonempty = separate_empties(
+                    detector_file_path=detector_file_path,
+                    conf_threshold=cfg['md_conf']
                 )
-            )
+                all_keys = list(set(all_keys).intersection(set(keys_nonempty)))
+
             # Create dataset
             dataset = WildlifeDataset(
-                keys=nonempty_keys,
+                keys=all_keys,
                 image_dir=cfg['img_dir'],
                 detector_file_path=detector_file_path,
                 label_file_path=os.path.join(
@@ -133,35 +167,6 @@ def main(config_file: str, task: str):
             save_as_pickle(
                 dataset, os.path.join(cfg['data_dir'], f'dataset_{mode}.pkl')
             )
-
-            if mode == 'train':
-                # Split training data in actual training data and validation data.
-                # If extra metadata for splitting are provided, create dict (even if
-                # not, data are always stratified by class).
-                if len(cfg['meta_file_train']) > 0:
-                    meta_dict = {
-                        k: {'meta_var': v} for k, v in load_csv(cfg['meta_file_train'])
-                    }
-                else:
-                    meta_dict = {k: {'meta_var': v} for k, v in label_dict.items()}
-                save_as_json(meta_dict, os.path.join(cfg['data_dir'], 'meta_dict.json'))
-                keys_all = list(set(nonempty_keys))
-                keys_all_img = [map_bbox_to_img(k) for k in keys_all]
-                keys_train, _, keys_val = do_stratified_splitting(
-                    img_keys=list(set(keys_all_img)),
-                    splits=cfg['splits'],
-                    meta_dict=meta_dict,
-                    random_state=cfg['random_state']
-                )
-                for keyset, partition in zip(
-                        [keys_train, keys_val], ['train', 'val']):
-                    subset = subset_dataset(
-                        dataset, flatten_list([dataset.mapping_dict[k] for k in keyset])
-                    )
-                    save_as_pickle(
-                        subset,
-                        os.path.join(cfg['data_dir'], f'dataset_t_{partition}.pkl')
-                    )
 
     elif task in ['train_passive', 'train_active']:
 
@@ -184,8 +189,8 @@ def main(config_file: str, task: str):
             'finetune_optimizer': Adam(learning_rate=cfg['finetune_learning_rate']),
             'finetune_layers': cfg['finetune_layers'],
             'model_backbone': cfg['model_backbone'],
-            'transfer_callbacks': None,
-            'finetune_callbacks': None,
+            'transfer_callbacks': cfg['transfer_callbacks'],
+            'finetune_callbacks': cfg['finetune_callbacks'],
             'num_workers': cfg['num_workers'],
             'eval_metrics': EVAL_METRICS,
         }
@@ -252,9 +257,10 @@ def main(config_file: str, task: str):
                 trainer = WildlifeTrainer(**trainer_args)
                 print('---> Training on wildlife data')
                 trainer.fit(train_dataset=dataset_train)
+                # TODO separate empties
                 print('---> Predicting on production data')
                 predictions = trainer.predict(dataset_prod)
-                # TODO save predictions
+                # TODO add empty MD predictions & save all
 
         else:
 
@@ -306,6 +312,7 @@ def main(config_file: str, task: str):
 
             results = load_json(active_learner.test_logfile_path)
             save_as_json(results, cfg['result_file'])
+            # TODO add prediction on prod
 
     else:
         raise ValueError(f'Task "{task}" not implemented.')

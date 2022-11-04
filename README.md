@@ -55,6 +55,8 @@ This repository implements experiments and exemplary training scripts using the 
       - `transfer_learning_rate`: learning rate for transfer learning.
       - `finetune_learning_rate`: learning rate for fine-tuning.
       - `finetune_layers`: number of layers of the feature extractor that shall be re-trained (e.g., 1 means the last layer before the linear classification head is re-trained).
+      - `transfer_callbacks`: list of `keras` callbacks to use during transfer learning.
+      - `finetune_callbacks`: list of `keras` callbacks to use during fine-tuning.
       - `model_backbone`: pre-trained backbone to be used. Must be one of: "resnet50", "inceptionresnetv2", "vgg19", "xception", "densenet121", "densenet201".
       - `num_workers`: number of workers available for training (depends on your machine, see, e.g., https://www.tensorflow.org/tutorials/distribute/multi_worker_with_keras).
       - `result_file`: path to json file in which results shall be stored.
