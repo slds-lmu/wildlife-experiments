@@ -5,17 +5,10 @@ import albumentations as A
 import os
 from typing import Final, List, Dict
 from wildlifeml.data import WildlifeDataset, subset_dataset
-from wildlifeml.utils.datasets import (
-    do_stratified_splitting,
-    do_stratified_cv,
-    map_bbox_to_img,
-    separate_empties,
-)
+from wildlifeml.utils.datasets import do_stratified_splitting, separate_empties
 from wildlifeml.utils.io import (
     load_csv,
-    load_csv_dict,
     load_json,
-    load_pickle,
     save_as_pickle
 )
 from wildlifeml.utils.misc import flatten_list
@@ -74,15 +67,13 @@ def main(repo_dir: str):
     # DATASETS -------------------------------------------------------------------------
 
     # Get metadata
-
     stations_dict = {
         k: {'station': v}
         for k, v in load_csv(os.path.join(cfg['data_dir'], cfg['meta_file']))
     }
     mapping_dict = load_json(os.path.join(cfg['data_dir'], cfg['mapping_file']))
 
-    # Prepare dataset and perform train-val-test split
-
+    # Define data augmentation
     augmentation = A.Compose(
         [
             A.HorizontalFlip(p=0.5),
@@ -90,25 +81,10 @@ def main(repo_dir: str):
             A.RandomBrightnessContrast(p=0.2),
         ]
     )
-
-    empty_keys_md, nonempty_keys_md = separate_empties(
-        detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
-        conf_threshold=cfg['md_conf']
-    )
-
-    empty_keys = list(
-        set(empty_keys_md).intersection(
-            set(flatten_list([v for v in mapping_dict.values()]))
-        )
-    )
-    nonempty_keys = list(
-        set(nonempty_keys_md).intersection(
-            set(flatten_list([v for v in mapping_dict.values()]))
-        )
-    )
-
+    # Create base dataset with all available keys
+    all_keys = list(mapping_dict.keys())
     dataset = WildlifeDataset(
-        keys=nonempty_keys,
+        keys=all_keys,
         image_dir=cfg['img_dir'],
         detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
         label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
@@ -117,52 +93,37 @@ def main(repo_dir: str):
         augmentation=augmentation,
     )
 
-    keys_is = [
-        map_bbox_to_img(k) for k in nonempty_keys
-        if stations_dict[map_bbox_to_img(k)]['station'] in STATIONS_IS
-    ]
+    # Define in-sample & out-of-sample keys according to camera stations
+    keys_is = [k for k in all_keys if stations_dict[k]['station'] in STATIONS_IS]
+    keys_oos = [k for k in all_keys if stations_dict[k]['station'] in STATIONS_OOS]
 
-    empty_keys_is = [
-        map_bbox_to_img(k) for k in empty_keys
-        if stations_dict[map_bbox_to_img(k)]['station'] in STATIONS_IS
-    ]
-
-    keys_oos = [
-        map_bbox_to_img(k) for k in nonempty_keys
-        if stations_dict[map_bbox_to_img(k)]['station'] in STATIONS_OOS
-    ]
-
-    empty_keys_oss = [
-        map_bbox_to_img(k) for k in empty_keys
-        if stations_dict[map_bbox_to_img(k)]['station'] in STATIONS_OOS
-    ]
-
+    # Split in-sample keys into train/val/test
     keys_is_train, keys_is_val, keys_is_test = do_stratified_splitting(
-        img_keys=list(set(keys_is)),
+        img_keys=keys_is,
         splits=cfg['splits'],
         meta_dict=stations_dict,
         random_state=cfg['random_state']
     )
 
-    keys_is_test = list(
-        set(keys_is_test).union(
-            set(empty_keys_is)
-        )
-    )
-
+    # Split out-of-sample keys into train/test (no val required in experiments)
     keys_oos_train, _, keys_oos_test = do_stratified_splitting(
-        img_keys=list(set(keys_oos)),
+        img_keys=keys_oos,
         splits=(cfg['splits'][0] + cfg['splits'][1], 0.0, cfg['splits'][2]),
         meta_dict=stations_dict,
         random_state=cfg['random_state']
     )
 
-    keys_oos_test = list(
-        set(keys_oos_test).union(
-            set(empty_keys_oss)
-        )
+    # Remove empty images from train/val keys (training is only based on non-empty
+    # images, while evaluation on test takes all keys into account)
+    _, keys_all_nonempty = separate_empties(
+        detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
+        conf_threshold=cfg['md_conf']
     )
+    keys_is_train = list(set(keys_is_train).intersection(set(keys_all_nonempty)))
+    keys_is_val = list(set(keys_is_val).intersection(set(keys_all_nonempty)))
+    keys_oos_train = list(set(keys_oos_train).intersection(set(keys_all_nonempty)))
 
+    # Create data subsets from different lists of keys
     for keyset, mode in zip(
             [
                 keys_is_train,
