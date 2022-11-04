@@ -1,4 +1,4 @@
-"""Prepare config file fr experiments."""
+"""Prepare config file for experiments."""
 
 import click
 import os
