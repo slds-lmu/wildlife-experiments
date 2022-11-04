@@ -3,9 +3,9 @@
 ## Installation
 
 - Clone the current repo into your local machine: `git clone https://github.com/slds-lmu/wildlife-experiments.git`
-- Install via the required dependencies either with `requirements.txt` or `environment.yml`: `conda env create -f environment.yml`
+- Install the required dependencies either with `requirements.txt` or `environment.yml`: `conda env create -f environment.yml`
   - :bulb: `environment.yml` creates a conda env and installs the dependencies on it. 
-  - :bulb: The created env is called `wex`, but, you can costomize its name by editing the first line of `environment.yml`.
+  - :bulb: The created env is called `wex`, but, you can customize its name by editing the first line of `environment.yml`.
 - Install the `wildlife-ml` package on the `wex`: `pip install git+https://<PAT>:@github.com/slds-lmu/wildlife-ml.git`
   - :bulb: The PAT (i.e., personal access token) might not be necessary if working on a private machine. 
   - :bulb: If you wish to install `wildlife-ml` from a branch other than `main` then use: `pip install git+https://<PAT>:@github.com/slds-lmu/wildlife-ml.git@<branch-name>`
