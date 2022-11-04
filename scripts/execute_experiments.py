@@ -64,13 +64,6 @@ def main(repo_dir: str, experiment: str):
         for k, v in load_csv(os.path.join(cfg['data_dir'], 'stations.csv'))
     }
 
-    # Get truly empty images
-    empty_class = load_json(
-        os.path.join(cfg['data_dir'], 'label_map.json')
-    ).get('empty')
-    true_empty = set([k for k, v in label_dict.items() if v == str(empty_class)])
-    true_nonempty = set(label_dict.keys()) - set(true_empty)
-
     # Prepare training
     dataset_is_train = load_pickle(
         os.path.join(cfg['data_dir'], 'dataset_is_train.pkl')
@@ -86,11 +79,6 @@ def main(repo_dir: str, experiment: str):
     dataset_oos_test = load_pickle(os.path.join(
         cfg['data_dir'], 'dataset_oos_test.pkl')
     )
-
-    # TODO find good defaults (via insample-perf experiment) and add them to config
-    # we should probably keep # finetuning epochs as low as possible, even 0 if perf is
-    # sufficient, bc this will blow up computation time
-    # in general: just trial and error until we have a good config
 
     trainer_args: Dict = {
         'batch_size': cfg['batch_size'],
@@ -141,6 +129,13 @@ def main(repo_dir: str, experiment: str):
 
     elif experiment == 'insample_empty':
 
+        # Get truly empty images
+        empty_class = load_json(
+            os.path.join(cfg['data_dir'], 'label_map.json')
+        ).get('empty')
+        true_empty = set([k for k, v in label_dict.items() if v == str(empty_class)])
+        true_nonempty = set(label_dict.keys()) - set(true_empty)
+
         # Compute empty-detection performance of MD stand-alone and for entire pipeline
 
         results_empty = {
@@ -154,7 +149,7 @@ def main(repo_dir: str, experiment: str):
 
             # Get imgs that MD classifies as empty
             keys_empty_bbox, keys_nonempty_bbox = separate_empties(
-                os.path.join(cfg['data_dir'], cfg['detector_file']), threshold
+                os.path.join(cfg['data_dir'], cfg['detector_file']), float(threshold)
             )
             keys_empty_bbox = list(
                 set(keys_empty_bbox).intersection(set(dataset_is_trainval.keys))
@@ -215,7 +210,7 @@ def main(repo_dir: str, experiment: str):
                 detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
                 dataset=dataset_is_test,
                 num_classes=trainer_empty.get_num_classes(),
-                conf_threshold=threshold,
+                conf_threshold=float(threshold),
             )
             conf_ppl = evaluator.evaluate(trainer_empty).get('conf_empty')
             tnr_ppl.append(conf_ppl.get('tnr'))
@@ -269,7 +264,7 @@ def main(repo_dir: str, experiment: str):
             filepath=os.path.join(cfg['data_dir'], cfg['pretraining_ckpt']),
             save_weights_only=True,
         )
-        trainer_pretraining.fit(dataset_is_trainval, dataset_is_test)
+        trainer_pretraining.fit(dataset_is_train, dataset_is_val)
 
         trainer_args_pretraining = dict(
             {
