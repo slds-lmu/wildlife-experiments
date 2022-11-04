@@ -113,6 +113,13 @@ def main(repo_dir: str):
         random_state=cfg['random_state']
     )
 
+    # Map keys to bbxox level
+    keys_is_train = flatten_list([dataset.mapping_dict[k] for k in keys_is_train])
+    keys_is_val = flatten_list([dataset.mapping_dict[k] for k in keys_is_val])
+    keys_is_test = flatten_list([dataset.mapping_dict[k] for k in keys_is_test])
+    keys_oos_train = flatten_list([dataset.mapping_dict[k] for k in keys_oos_train])
+    keys_oos_test = flatten_list([dataset.mapping_dict[k] for k in keys_oos_test])
+
     # Remove empty images from train/val keys (training is only based on non-empty
     # images, while evaluation on test takes all keys into account)
     _, keys_all_nonempty = separate_empties(
@@ -142,9 +149,7 @@ def main(repo_dir: str):
                 'oos_test'
             ]
     ):
-        subset = subset_dataset(
-            dataset, flatten_list([dataset.mapping_dict[k] for k in keyset])
-        )
+        subset = subset_dataset(dataset, keyset)
         save_as_pickle(subset, os.path.join(cfg['data_dir'], f'dataset_{mode}.pkl'))
 
 
