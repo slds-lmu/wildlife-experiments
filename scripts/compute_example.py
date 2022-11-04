@@ -12,7 +12,7 @@ from wildlifeml.preprocessing.megadetector import MegaDetector
 from wildlifeml.training.trainer import WildlifeTrainer
 from wildlifeml.training.active import ActiveLearner
 from wildlifeml.training.evaluator import Evaluator
-from wildlifeml.data import BBoxMapper, WildlifeDataset, subset_dataset
+from wildlifeml.data import BBoxMapper, WildlifeDataset
 from wildlifeml.utils.io import (
     load_csv,
     save_as_csv,
@@ -21,11 +21,7 @@ from wildlifeml.utils.io import (
     load_pickle,
     save_as_pickle
 )
-from wildlifeml.utils.datasets import (
-    separate_empties,
-    do_stratified_splitting,
-    map_bbox_to_img
-)
+from wildlifeml.utils.datasets import (separate_empties, do_stratified_splitting)
 from wildlifeml.utils.misc import flatten_list
 from wildlifeml.utils.metrics import (
     SparseCategoricalRecall,
