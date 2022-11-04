@@ -24,6 +24,11 @@ This repository implements experiments and exemplary training scripts using the 
 - For **EXEMPLARY USE**:
   - `compute_example.py` contains examples of how to use this repository.
   - It provides code for 3 tasks: preparing the data ("prep") and training in standard ("train_passive") as well as active ("train_active") fashion.
+  - Up to four different sets of data can be specified (see below for details on how to feed them to the learning pipeline):
+    - **Training**: labeled data to train the classifier on.
+    - **Test**: labeled data to evaluate the classifier with.
+    - **Pre-training** (OPTIONAL): labeled data to pre-train weights on before the classifier is fitted to the actual training data (e.g., from a previous project).
+    - **Productive** (OPTIONAL): data for which predictions are desired after training and evaluation (no labels needed).
   - In order to execute the code, run the corresponding bash file (the sole purpose of which is to execute the code in `compute_example.py` with appropriate settings) from your command line via `bash scripts/run_example.sh <path/to/config/file> <task>`, e.g., `bash scripts/run_example.sh /home/me/wildlife-experiments/configs/config_example.json prep`.
   - There are two places that require custom user input:
     - `run_example.sh` expects two arguments: the (absolute) path to the configuration file that contains all training specifications (see next step), and the task to be executed (must be one out of "prep", "train_passive", "train_active").
