@@ -5,7 +5,7 @@ This repository implements experiments and exemplary training scripts using the 
 ## Disclaimer
 
 - The `main` branch is protected to avoid unintended modifications.
-- Please **always** work on a local branch -- also if you only run the code, as the produced files will otherwise overwrite the original, which may cause conflicts and result in lost work.
+- Please **always** work on a local branch - also if you only run the code, as the produced files will otherwise overwrite the originals, which may cause conflicts and result in work lost.
 
 ## Installation
 
