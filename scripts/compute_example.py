@@ -12,7 +12,7 @@ from wildlifeml.preprocessing.megadetector import MegaDetector
 from wildlifeml.training.trainer import WildlifeTrainer
 from wildlifeml.training.active import ActiveLearner
 from wildlifeml.training.evaluator import Evaluator
-from wildlifeml.data import BBoxMapper, WildlifeDataset
+from wildlifeml.data import BBoxMapper, WildlifeDataset, subset_dataset
 from wildlifeml.utils.io import (
     load_csv,
     save_as_csv,
@@ -21,7 +21,11 @@ from wildlifeml.utils.io import (
     load_pickle,
     save_as_pickle
 )
-from wildlifeml.utils.datasets import (separate_empties, do_stratified_splitting)
+from wildlifeml.utils.datasets import (
+    separate_empties,
+    do_stratified_splitting,
+    map_preds_to_img
+)
 from wildlifeml.utils.misc import flatten_list
 from wildlifeml.utils.metrics import (
     SparseCategoricalRecall,
@@ -253,10 +257,30 @@ def main(config_file: str, task: str):
                 trainer = WildlifeTrainer(**trainer_args)
                 print('---> Training on wildlife data')
                 trainer.fit(train_dataset=dataset_train)
-                # TODO separate empties
+                # Filter empty data as detected by the MegaDetector
+                keys_prod_empty, keys_prod_nonempty = separate_empties(
+                    cfg['detector_file_prod']
+                )
+                # Predict on non-empty data
                 print('---> Predicting on production data')
-                predictions = trainer.predict(dataset_prod)
-                # TODO add empty MD predictions & save all
+                dataset_prod_nonempty = subset_dataset(dataset_prod, keys_prod_nonempty)
+                preds_bbox = trainer.predict(dataset_prod_nonempty)
+                detector_dict_prod = load_json(cfg['detector_file_prod'])
+                preds_img = map_preds_to_img(
+                    preds=preds_bbox,
+                    bbox_keys=dataset_prod_nonempty.keys,
+                    mapping_dict=dataset_prod_nonempty.mapping_dict,
+                    detector_dict=detector_dict_prod,
+                )
+                # Collect all predictions and save result
+                empty_class = load_json(
+                    os.path.join(cfg['data_dir'], f'label_map_prod.json')
+                ).get('empty')
+                preds_img.update({k: empty_class for k in keys_prod_empty})
+                save_as_csv(
+                    [(k, v) for k, v in preds_img.items()],
+                    os.path.join(cfg['data_dir'], 'predictions_prod.csv')
+                )
 
         else:
 
@@ -308,7 +332,6 @@ def main(config_file: str, task: str):
 
             results = load_json(active_learner.test_logfile_path)
             save_as_json(results, cfg['result_file'])
-            # TODO add prediction on prod
 
     else:
         raise ValueError(f'Task "{task}" not implemented.')
