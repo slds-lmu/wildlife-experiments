@@ -6,7 +6,7 @@
     "detector_file_train": "/home/wimmerl/projects/wildlife-experiments/example_files/detector_file_train.json",
     "detector_file_test": "/home/wimmerl/projects/wildlife-experiments/example_files/detector_file_test.json",
     "detector_file_pretrain": "",
-    "detector_file_prod": "/home/wimmerl/projects/wildlife-experiments/example_files/detector_file_test.json",,
+    "detector_file_prod": "/home/wimmerl/projects/wildlife-experiments/example_files/detector_file_test.json",
     "meta_file_train": "/home/wimmerl/projects/wildlife-experiments/example_files/meta_file_train.csv",
     "data_dir": "/home/wimmerl/projects/wildlife-experiments/example_files/",
     "img_dir": "/wildlife_images/usecase2/original_images/",
