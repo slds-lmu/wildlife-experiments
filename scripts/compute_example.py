@@ -78,18 +78,18 @@ def main(config_file: str, task: str):
         label_dict_val = {k: v for k, v, in label_dict.items() if k in keys_val}
         save_as_csv(
             [(k, v) for k, v in label_dict_train.items()],
-            os.path.join(cfg['data_dir'], f'label_file_t_train.csv')
+            os.path.join(cfg['data_dir'], f'label_file_train.csv')
         )
         save_as_csv(
             [(k, v) for k, v in label_dict_val.items()],
-            os.path.join(cfg['data_dir'], f'label_file_t_val.csv')
+            os.path.join(cfg['data_dir'], f'label_file_val.csv')
         )
 
         # Prepare all necessary files
 
         label_files = [
-            os.path.join(cfg['data_dir'], f'label_file_t_train.csv'),
-            os.path.join(cfg['data_dir'], f'label_file_t_val.csv'),
+            os.path.join(cfg['data_dir'], f'label_file_train.csv'),
+            os.path.join(cfg['data_dir'], f'label_file_val.csv'),
             cfg['label_file_test']
         ]
         modes = ['train', 'val', 'test']
@@ -224,11 +224,11 @@ def main(config_file: str, task: str):
         if task == 'train_passive':
 
             # Load datasets
-            dataset_t_train = load_pickle(
-                os.path.join(cfg['data_dir'], 'dataset_t_train.pkl')
+            dataset_train = load_pickle(
+                os.path.join(cfg['data_dir'], 'dataset_train.pkl')
             )
-            dataset_t_val = load_pickle(
-                os.path.join(cfg['data_dir'], 'dataset_t_val.pkl')
+            dataset_val = load_pickle(
+                os.path.join(cfg['data_dir'], 'dataset_val.pkl')
             )
             # Instantiate evaluator
             evaluator = Evaluator(
@@ -243,7 +243,7 @@ def main(config_file: str, task: str):
             )
             # Train
             print('---> Training on wildlife data')
-            trainer.fit(train_dataset=dataset_t_train, val_dataset=dataset_t_val)
+            trainer.fit(train_dataset=dataset_train, val_dataset=dataset_val)
             # Evaluate
             print('---> Evaluating on test data')
             test_results = evaluator.evaluate(trainer)
