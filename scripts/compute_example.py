@@ -254,9 +254,6 @@ def main(config_file: str, task: str):
                 dataset_prod = load_pickle(
                     os.path.join(cfg['data_dir'], 'dataset_prod.pkl')
                 )
-                trainer = WildlifeTrainer(**trainer_args)
-                print('---> Training on wildlife data')
-                trainer.fit(train_dataset=dataset_train)
                 # Filter empty data as detected by the MegaDetector
                 keys_prod_empty, keys_prod_nonempty = separate_empties(
                     cfg['detector_file_prod']
@@ -272,7 +269,7 @@ def main(config_file: str, task: str):
                     mapping_dict=dataset_prod_nonempty.mapping_dict,
                     detector_dict=detector_dict_prod,
                 )
-                preds_img = {k: format(v, '.4f') for k, v in preds_img.items()}
+                preds_img = {k: v.round(4) for k, v in preds_img.items()}
                 # Collect all predictions and save result
                 empty_class = load_json(
                     os.path.join(cfg['data_dir'], f'label_map_prod.json')
