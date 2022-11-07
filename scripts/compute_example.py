@@ -133,6 +133,8 @@ def main(config_file: str, task: str):
             # Create mapping from images to bounding boxes
             mapper = BBoxMapper(detector_file_path)
             bbox_map = mapper.get_keymap()
+            for k in (set(bbox_map) - set(label_dict_original)):
+                del bbox_map[k]
             save_as_json(
                 bbox_map, os.path.join(cfg['data_dir'], f'bbox_map_{mode}.json')
             )
@@ -224,9 +226,6 @@ def main(config_file: str, task: str):
         if task == 'train_passive':
 
             # Load datasets
-            dataset_train = load_pickle(
-                os.path.join(cfg['data_dir'], 'dataset_train.pkl')
-            )
             dataset_val = load_pickle(
                 os.path.join(cfg['data_dir'], 'dataset_val.pkl')
             )
