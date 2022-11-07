@@ -6,6 +6,7 @@ import click
 import os
 from typing import Dict, Final, List
 
+import numpy as np
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 from wildlifeml.preprocessing.megadetector import MegaDetector
@@ -185,8 +186,8 @@ def main(config_file: str, task: str):
             'batch_size': cfg['batch_size'],
             'loss_func': keras.losses.SparseCategoricalCrossentropy(),
             'num_classes': cfg['num_classes'],
-            'transfer_epochs': cfg['transfer_epochs'],
-            'finetune_epochs': cfg['finetune_epochs'],
+            'transfer_epochs': 1,  # cfg['transfer_epochs'],
+            'finetune_epochs': 0,  # cfg['finetune_epochs'],
             'transfer_optimizer': Adam(learning_rate=cfg['transfer_learning_rate']),
             'finetune_optimizer': Adam(learning_rate=cfg['finetune_learning_rate']),
             'finetune_layers': cfg['finetune_layers'],
@@ -271,11 +272,14 @@ def main(config_file: str, task: str):
                     mapping_dict=dataset_prod_nonempty.mapping_dict,
                     detector_dict=detector_dict_prod,
                 )
+                preds_img = {k: format(v, '.4f') for k, v in preds_img.items()}
                 # Collect all predictions and save result
                 empty_class = load_json(
                     os.path.join(cfg['data_dir'], f'label_map_prod.json')
                 ).get('empty')
-                preds_img.update({k: empty_class for k in keys_prod_empty})
+                empty_pred = np.zeros(cfg['num_classes'])
+                empty_pred[empty_class] = 1.
+                preds_img.update({k: empty_pred for k in keys_prod_empty})
                 save_as_csv(
                     [(k, v) for k, v in preds_img.items()],
                     os.path.join(cfg['data_dir'], 'predictions_prod.csv')
