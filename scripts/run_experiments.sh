@@ -1,8 +1,8 @@
 #!/bin/bash
 
 GPUNAME=$1
-EXPERIMENT=$2
-USERNAME=$3
+PERSONALFOLDER=$2
+EXPERIMENT=$3
 if [[ -z $GPUNAME ]]
 then
     echo `date`" - Missing mandatory arguments: GPU name. "
@@ -15,5 +15,5 @@ else
 fi
 
 python scripts/execute_experiments.py \
---repo_dir=/home/$USERNAME/projects/wildlife-experiments/ \
+--repo_dir=$PERSONALFOLDER/wildlife-experiments/ \
 --experiment=$EXPERIMENT
