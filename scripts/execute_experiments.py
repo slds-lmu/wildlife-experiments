@@ -123,7 +123,7 @@ def main(repo_dir: str, experiment: str):
     if experiment == 'insample_perf':
         trainer_perf_is = WildlifeTrainer(**trainer_args)
         print('---> Training on wildlife data')
-        tf.random.set_seed(123)
+        tf.random.set_seed(cfg['random_state'])
         trainer_perf_is.fit(train_dataset=dataset_is_train, val_dataset=dataset_is_val)
         print('---> Evaluating on test data')
         results_perf = evaluator_is.evaluate(trainer_perf_is)
@@ -208,7 +208,7 @@ def main(repo_dir: str, experiment: str):
 
             trainer_empty = WildlifeTrainer(**trainer_args)
             print('---> Training on wildlife data')
-            tf.random.set_seed(123)
+            tf.random.set_seed(cfg['random_state'])
             trainer_empty.fit(
                 train_dataset=dataset_train_thresh, val_dataset=dataset_val_thresh
             )
@@ -253,7 +253,7 @@ def main(repo_dir: str, experiment: str):
     elif experiment == 'oosample_perf':
         print('---> Training on in-sample data')
         trainer_perf_oos = WildlifeTrainer(**trainer_args)
-        tf.random.set_seed(123)
+        tf.random.set_seed(cfg['random_state'])
         trainer_perf_oos.fit(train_dataset=dataset_is_train, val_dataset=dataset_is_val)
         print('---> Evaluating on out-of-sample data')
         results_perf_passive = evaluator_oos.evaluate(trainer_perf_oos)
@@ -273,7 +273,7 @@ def main(repo_dir: str, experiment: str):
             filepath=os.path.join(cfg['data_dir'], cfg['pretraining_ckpt']),
             save_weights_only=True,
         )
-        tf.random.set_seed(123)
+        tf.random.set_seed(cfg['random_state'])
         trainer_pretraining.fit(dataset_is_train, dataset_is_val)
 
         trainer_args_pretraining = dict(
@@ -310,7 +310,7 @@ def main(repo_dir: str, experiment: str):
             print('---> Running initial AL iteration')
             if os.path.exists(os.path.join(cfg['active_dir'], '.activecache.json')):
                 os.remove(os.path.join(cfg['active_dir'], '.activecache.json'))
-            tf.random.set_seed(123)
+            tf.random.set_seed(cfg['random_state'])
             active_learner.run()
             active_learner.do_fresh_start = False
 
@@ -329,7 +329,7 @@ def main(repo_dir: str, experiment: str):
                     os.path.join(cfg['active_dir'], 'active_labels.csv')
                 )
                 print('---> Supplied fresh labeled data')
-                tf.random.set_seed(123)
+                tf.random.set_seed(cfg['random_state'])
                 active_learner.run()
 
             results = load_json(active_learner.test_logfile_path)
