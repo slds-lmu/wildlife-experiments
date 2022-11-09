@@ -1,5 +1,6 @@
 """In-sample results."""
 
+import time
 import click
 from copy import deepcopy
 import os
@@ -29,6 +30,8 @@ from wildlifeml.utils.metrics import (
     SparseCategoricalPrecision, 
     SparseCategoricalF1
 )
+
+timestr = time.strftime("%Y%m%d%H%M")
 
 EVAL_METRICS: Final[List] = [
     'accuracy',
@@ -122,7 +125,8 @@ def main(repo_dir: str, experiment: str):
         print('---> Evaluating on test data')
         results_perf = evaluator_is.evaluate(trainer_perf_is)
         save_as_json(
-            results_perf, os.path.join(cfg['result_dir'], 'results_insample_perf.json')
+            results_perf,
+            os.path.join(cfg['result_dir'], f'{timestr}_results_insample_perf.json')
         )
 
     # EMPTY VS NON-EMPTY ---------------------------------------------------------------
@@ -233,7 +237,7 @@ def main(repo_dir: str, experiment: str):
 
         save_as_json(
             results_empty,
-            os.path.join(cfg['result_dir'], 'results_insample_empty.json')
+            os.path.join(cfg['result_dir'], f'{timestr}_results_insample_empty.json')
         )
 
     # ----------------------------------------------------------------------------------
@@ -250,7 +254,7 @@ def main(repo_dir: str, experiment: str):
         results_perf_passive = evaluator_oos.evaluate(trainer_perf_oos)
         save_as_json(
             results_perf_passive,
-            os.path.join(cfg['result_dir'], 'results_oosample_perf.json')
+            os.path.join(cfg['result_dir'], f'{timestr}_results_oosample_perf.json')
         )
 
     # WITH AL (WARM- AND COLDSTART) ----------------------------------------------------
@@ -323,7 +327,9 @@ def main(repo_dir: str, experiment: str):
             results = load_json(active_learner.test_logfile_path)
             save_as_json(
                 results,
-                os.path.join(cfg['result_dir'], f'results_oosample_active_{mode}.json')
+                os.path.join(
+                    cfg['result_dir'], f'{timestr}_results_oosample_active_{mode}.json'
+                )
             )
 
     else:
