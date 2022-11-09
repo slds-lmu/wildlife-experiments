@@ -33,6 +33,8 @@ from wildlifeml.utils.metrics import (
     SparseCategoricalF1
 )
 
+from tensorflow.keras.callbacks import EarlyStopping
+
 timestr = time.strftime("%Y%m%d%H%M")
 
 EVAL_METRICS: Final[List] = [
@@ -85,6 +87,18 @@ def main(repo_dir: str, experiment: str):
         cfg['data_dir'], 'dataset_oos_test.pkl')
     )
 
+    transfer_callbacks = [
+        EarlyStopping(
+            monitor=cfg['earlystop_metric'], 
+            patience=cfg['transfer_patience'],
+            )]
+
+    finetune_callbacks = [
+        EarlyStopping(
+            monitor=cfg['earlystop_metric'], 
+            patience=cfg['finetune_patience'],
+            )]
+
     trainer_args: Dict = {
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
@@ -95,8 +109,8 @@ def main(repo_dir: str, experiment: str):
         'finetune_optimizer': Adam(learning_rate=cfg['finetune_learning_rate']),
         'finetune_layers': cfg['finetune_layers'],
         'model_backbone': cfg['model_backbone'],
-        'transfer_callbacks': None,
-        'finetune_callbacks': None,
+        'transfer_callbacks': transfer_callbacks,
+        'finetune_callbacks': finetune_callbacks,
         'num_workers': cfg['num_workers'],
         'eval_metrics': EVAL_METRICS,
     }
