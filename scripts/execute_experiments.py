@@ -77,13 +77,15 @@ def main(repo_dir: str, experiment: str):
         EarlyStopping(
             monitor=cfg['earlystop_metric'], 
             patience=cfg['transfer_patience'],
-            )]
+        )
+    ]
 
     finetune_callbacks = [
         EarlyStopping(
             monitor=cfg['earlystop_metric'], 
             patience=cfg['finetune_patience'],
-            )]
+        )
+    ]
 
     trainer_args: Dict = {
         'batch_size': cfg['batch_size'],
