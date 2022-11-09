@@ -98,7 +98,7 @@ def main(repo_dir: str, experiment: str):
         'transfer_callbacks': transfer_callbacks,
         'finetune_callbacks': finetune_callbacks,
         'num_workers': cfg['num_workers'],
-        'eval_metrics': cfg['accuracy'],
+        'eval_metrics': cfg['eval_metrics'],
     }
 
     evaluator_is = Evaluator(
