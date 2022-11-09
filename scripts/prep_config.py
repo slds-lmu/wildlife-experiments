@@ -30,8 +30,8 @@ def main(repo_dir: str, root_dir: str, img_dir: str):
         'splits': (0.7, 0.15, 0.15),
         'batch_size': 64,
         'num_classes': 8,
-        'transfer_epochs': 10,
-        'finetune_epochs': 4,
+        'transfer_epochs': 200,
+        'finetune_epochs': 200,
         'finetune_layers': 1,
         'transfer_learning_rate': 1e-4,
         'finetune_learning_rate': 5e-3,
@@ -43,6 +43,9 @@ def main(repo_dir: str, root_dir: str, img_dir: str):
         'al_batchsize': 32,
         'al_iterations': 1,
         'pretraining_ckpt': 'pretrained_weights',
+        'earlystop_metric': 'val_loss',
+        'transfer_patience': 3,
+        'finetune_patience': 3,
     }
     save_as_json(cfg, os.path.join(repo_dir, 'configs/cfg.json'))
 
