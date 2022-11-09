@@ -125,7 +125,8 @@ def main(repo_dir: str, experiment: str):
         print('---> Evaluating on test data')
         results_perf = evaluator_is.evaluate(trainer_perf_is)
         save_as_json(
-            results_perf, os.path.join(cfg['result_dir'], f'{timestr}_results_insample_perf.json')
+            results_perf,
+            os.path.join(cfg['result_dir'], f'{timestr}_results_insample_perf.json')
         )
 
     # EMPTY VS NON-EMPTY ---------------------------------------------------------------
@@ -326,7 +327,9 @@ def main(repo_dir: str, experiment: str):
             results = load_json(active_learner.test_logfile_path)
             save_as_json(
                 results,
-                os.path.join(cfg['result_dir'], f'{timestr}_results_oosample_active_{mode}.json')
+                os.path.join(
+                    cfg['result_dir'], f'{timestr}_results_oosample_active_{mode}.json'
+                )
             )
 
     else:
