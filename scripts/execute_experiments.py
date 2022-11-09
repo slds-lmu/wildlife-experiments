@@ -4,6 +4,8 @@ import time
 import click
 from copy import deepcopy
 import os
+
+from keras.utils import set_random_seed
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 from typing import Dict, Final, List
@@ -121,6 +123,7 @@ def main(repo_dir: str, experiment: str):
     if experiment == 'insample_perf':
         trainer_perf_is = WildlifeTrainer(**trainer_args)
         print('---> Training on wildlife data')
+        set_random_seed(123)
         trainer_perf_is.fit(train_dataset=dataset_is_train, val_dataset=dataset_is_val)
         print('---> Evaluating on test data')
         results_perf = evaluator_is.evaluate(trainer_perf_is)
