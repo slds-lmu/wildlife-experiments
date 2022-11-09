@@ -17,12 +17,12 @@
     ],
     "batch_size": 64,
     "num_classes": 8,
-    "transfer_epochs": 1,
-    "finetune_epochs": 1,
+    "transfer_epochs": 10,
+    "finetune_epochs": 4,
     "finetune_layers": 1,
-    "transfer_learning_rate": 0.001,
-    "finetune_learning_rate": 0.001,
-    "model_backbone": "resnet50",
+    "transfer_learning_rate": 0.0001,
+    "finetune_learning_rate": 0.005,
+    "model_backbone": "xception",
     "num_workers": 16,
     "eval_metrics": [
         "accuracy"
@@ -31,10 +31,5 @@
     "active_dir": "/home/wimmerl/projects/wildlife-experiments/active/",
     "al_batchsize": 32,
     "al_iterations": 1,
-    "pretraining_ckpt": "pretrained_weights",
-    "n_trials": 5,
-    "time_budget": 360000,
-    "max_concurrent_trials": 4,
-    "search_alg_id": "randomsearch",
-    "scheduler_alg_id": "ashascheduler"
+    "pretraining_ckpt": "pretrained_weights"
 }

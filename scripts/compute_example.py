@@ -7,6 +7,7 @@ import os
 from typing import Dict, Final, List
 
 import numpy as np
+import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 from wildlifeml.preprocessing.megadetector import MegaDetector
@@ -208,6 +209,7 @@ def main(config_file: str, task: str):
                 filepath=os.path.join(cfg['data_dir'], 'pretraining_ckpt'),
                 save_weights_only=True,
             )
+            tf.random.set_seed(cfg['random_state'])
             trainer_pretrain.fit(train_dataset=dataset_pretrain)
             trainer_args_pretraining = dict(
                 {
@@ -243,6 +245,7 @@ def main(config_file: str, task: str):
             )
             # Train
             print('---> Training on wildlife data')
+            tf.random.set_seed(cfg['random_state'])
             trainer.fit(train_dataset=dataset_train, val_dataset=dataset_val)
             # Evaluate
             print('---> Evaluating on test data')
@@ -304,6 +307,7 @@ def main(config_file: str, task: str):
             print('---> Running initial AL iteration')
             if os.path.exists(os.path.join(cfg['active_dir'], '.activecache.json')):
                 os.remove(os.path.join(cfg['active_dir'], '.activecache.json'))
+            tf.random.set_seed(cfg['random_state'])
             active_learner.run()
             active_learner.do_fresh_start = False
 
@@ -328,6 +332,7 @@ def main(config_file: str, task: str):
                         os.path.join(cfg['active_dir'], 'active_labels.csv')
                     )
                     print('---> Supplied fresh labeled data')
+                    tf.random.set_seed(cfg['random_state'])
                     active_learner.run()
 
             results = load_json(active_learner.test_logfile_path)
