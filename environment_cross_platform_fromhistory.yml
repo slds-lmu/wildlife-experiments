@@ -1,0 +1,7 @@
+name: wildlife
+channels:
+  - defaults
+dependencies:
+  - tensorflow-gpu
+  - python=3.9
+prefix: /home/wimmerl/miniconda2/envs/wildlife
