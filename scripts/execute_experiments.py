@@ -287,6 +287,15 @@ def main(repo_dir: str, experiment: str):
             **trainer_args
         )
 
+        num_max_batches = (len(dataset_oos_train.keys) - (10 * 128 + 5 * 256)) // 512
+        size_last_batch = (
+                len(dataset_oos_train.keys) -
+                (10 * 128 + 5 * 256 + num_max_batches * 512)
+        )
+        batch_sizes: Final[List] = (
+                10 * [128] + 5 * [256] + num_max_batches[512] + [size_last_batch]
+        )
+
         for args, mode in zip(
                 [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
         ):
@@ -307,7 +316,8 @@ def main(repo_dir: str, experiment: str):
                 ),
                 meta_dict=stations_dict,
                 active_directory=cfg['active_dir'],
-                state_cache=os.path.join(cfg['active_dir'], '.activecache.json')
+                state_cache=os.path.join(cfg['active_dir'], '.activecache.json'),
+                al_batch_size=batch_sizes[0]
             )
 
             print('---> Running initial AL iteration')
@@ -319,12 +329,12 @@ def main(repo_dir: str, experiment: str):
 
             # Set AL iterations to maximum or as specified in config
             if cfg['al_iterations'] < 0:
-                al_iterations = len(dataset_oos_train.keys) // cfg['al_batchsize'] - 1
+                al_iterations = len(batch_sizes) - 1
             else:
-                al_iterations = min(
-                    cfg['al_iterations'],
-                    len(dataset_oos_train.keys) // cfg['al_batchsize'] - 1
-                )
+                al_iterations = min(cfg['al_iterations'], len(batch_sizes) - 1)
+
+            print(batch_sizes)
+            print(al_iterations)
 
             for i in range(al_iterations):
                 print(f'---> Starting AL iteration {i + 1}/{al_iterations + 1}')
@@ -342,6 +352,7 @@ def main(repo_dir: str, experiment: str):
                 )
                 print('---> Supplied fresh labeled data')
                 tf.random.set_seed(cfg['random_state'])
+                active_learner.al_batch_size = batch_sizes[i + 1]
                 active_learner.run()
 
             results = load_json(active_learner.test_logfile_path)
