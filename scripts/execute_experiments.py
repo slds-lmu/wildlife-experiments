@@ -291,6 +291,7 @@ def main(repo_dir: str, experiment: str):
                 [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
         ):
 
+            args['num_workers'] = 1  # avoid file overload due to TF multi-processing
             trainer = WildlifeTrainer(**args)
             active_learner = ActiveLearner(
                 trainer=trainer,
@@ -316,8 +317,17 @@ def main(repo_dir: str, experiment: str):
             active_learner.run()
             active_learner.do_fresh_start = False
 
-            for i in range(cfg['al_iterations']):
-                print(f'---> Starting AL iteration {i + 1}')
+            # Set AL iterations to maximum or as specified in config
+            if cfg['al_iterations'] < 0:
+                al_iterations = len(dataset_oos_train.keys) // cfg['al_batchsize'] - 1
+            else:
+                al_iterations = min(
+                    cfg['al_iterations'],
+                    len(dataset_oos_train.keys) // cfg['al_batchsize'] - 1
+                )
+
+            for i in range(al_iterations):
+                print(f'---> Starting AL iteration {i + 1}/{al_iterations + 1}')
                 keys_to_label = [
                     k for k, _ in load_csv(
                         os.path.join(cfg['active_dir'], 'active_labels.csv')
