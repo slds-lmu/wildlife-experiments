@@ -334,9 +334,6 @@ def main(repo_dir: str, experiment: str):
             else:
                 al_iterations = min(cfg['al_iterations'], len(batch_sizes) - 1)
 
-            print(batch_sizes)
-            print(al_iterations)
-            exit()
             for i in range(al_iterations):
                 print(f'---> Starting AL iteration {i + 1}/{al_iterations + 1}')
                 keys_to_label = [
@@ -357,6 +354,7 @@ def main(repo_dir: str, experiment: str):
                 active_learner.run()
 
             results = load_json(active_learner.test_logfile_path)
+            results.update({'batch_sizes': batch_sizes})
             save_as_json(
                 results,
                 os.path.join(
