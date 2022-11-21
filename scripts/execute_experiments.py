@@ -335,7 +335,7 @@ def main(repo_dir: str, experiment: str):
 
             print(batch_sizes)
             print(al_iterations)
-
+            exit()
             for i in range(al_iterations):
                 print(f'---> Starting AL iteration {i + 1}/{al_iterations + 1}')
                 keys_to_label = [
