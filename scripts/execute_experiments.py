@@ -295,6 +295,7 @@ def main(repo_dir: str, experiment: str):
         batch_sizes: Final[List] = (
                 10 * [128] + 5 * [256] + num_max_batches * [512] + [size_last_batch]
         )
+        batch_sizes = [16, 16, 16]
 
         for args, mode in zip(
                 # [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart'],
@@ -315,6 +316,9 @@ def main(repo_dir: str, experiment: str):
                 test_logfile_path=os.path.join(
                     cfg['result_dir'], cfg['test_logfile'] + f'{mode}.json'
                 ),
+                acq_logfile_path = os.path.join(
+                    cfg['result_dir'], 'acq_logfile_' + f'{mode}.json'
+                ),
                 meta_dict=stations_dict,
                 active_directory=cfg['active_dir'],
                 state_cache=os.path.join(cfg['active_dir'], '.activecache.json'),
@@ -334,7 +338,7 @@ def main(repo_dir: str, experiment: str):
             else:
                 al_iterations = min(cfg['al_iterations'], len(batch_sizes) - 1)
 
-            for i in range(al_iterations):
+            for i in range(1):  # range(al_iterations):
                 print(f'---> Starting AL iteration {i + 1}/{al_iterations + 1}')
                 keys_to_label = [
                     k for k, _ in load_csv(
