@@ -296,7 +296,7 @@ def main(repo_dir: str, experiment: str):
         # batch_sizes: Final[List] = (
         #         10 * [128] + 5 * [256] + num_max_batches * [512] + [size_last_batch]
         # )
-        batch_sizes = [16, 16, 16, 16, 16]
+        batch_sizes = [16, 16, 16, 16]
 
         for args, mode in zip(
                 # [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart'],
