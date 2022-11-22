@@ -266,8 +266,6 @@ def main(repo_dir: str, experiment: str):
 
     # WITH AL (WARM- AND COLDSTART) ----------------------------------------------------
 
-    # TODO check if pre-training actually works as planned here
-    # TODO find good settings for AL
     elif experiment == 'oosample_active':
 
         trainer_pretraining = WildlifeTrainer(**trainer_args)
@@ -286,17 +284,17 @@ def main(repo_dir: str, experiment: str):
             },
             **trainer_args
         )
-        keys_bugfix = random.sample(dataset_oos_train.keys, 64)
-        dataset_oos_train = subset_dataset(dataset_oos_train, keys_bugfix)
+        # keys_bugfix = random.sample(dataset_oos_train.keys, 64)
+        # dataset_oos_train = subset_dataset(dataset_oos_train, keys_bugfix)
         num_max_batches = (len(dataset_oos_train.keys) - (10 * 128 + 5 * 256)) // 512
         size_last_batch = (
                 len(dataset_oos_train.keys) -
                 (10 * 128 + 5 * 256 + num_max_batches * 512)
         )
-        # batch_sizes: Final[List] = (
-        #         10 * [128] + 5 * [256] + num_max_batches * [512] + [size_last_batch]
-        # )
-        batch_sizes = [16, 16, 16, 16]
+        batch_sizes: Final[List] = (
+                10 * [128] + 5 * [256] + num_max_batches * [512] + [size_last_batch]
+        )
+        # batch_sizes = [16, 16, 16, 16]
 
         for args, mode in zip(
                 # [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart'],
@@ -315,7 +313,7 @@ def main(repo_dir: str, experiment: str):
                 train_size=cfg['splits'][0],
                 test_dataset=dataset_oos_test,
                 test_logfile_path=os.path.join(
-                    cfg['result_dir'], cfg['test_logfile'] + f'{mode}.json'
+                    cfg['result_dir'], cfg['test_logfile_'] + f'{mode}.json'
                 ),
                 acq_logfile_path=os.path.join(
                     cfg['result_dir'], 'acq_logfile_' + f'{mode}.json'
