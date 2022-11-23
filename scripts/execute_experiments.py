@@ -8,6 +8,7 @@ import os
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
+import gc
 from typing import Dict, Final, List
 from wildlifeml.data import subset_dataset
 from wildlifeml.training.trainer import WildlifeTrainer
@@ -286,13 +287,16 @@ def main(repo_dir: str, experiment: str):
         )
         # keys_bugfix = random.sample(dataset_oos_train.keys, 64)
         # dataset_oos_train = subset_dataset(dataset_oos_train, keys_bugfix)
-        num_max_batches = (len(dataset_oos_train.keys) - (10 * 128 + 5 * 256)) // 512
+        num_max_batches = (
+                (len(dataset_oos_train.keys) - (5 * 128 + 5 * 256 + 5 * 512)) // 1024
+        )
         size_last_batch = (
                 len(dataset_oos_train.keys) -
-                (10 * 128 + 5 * 256 + num_max_batches * 512)
+                (5 * 128 + 5 * 256 + 5 * 512 + num_max_batches * 1024)
         )
         batch_sizes: Final[List] = (
-                10 * [128] + 5 * [256] + num_max_batches * [512] + [size_last_batch]
+                5 * [128] + 5 * [256] + 5 * [512] + num_max_batches * [1024]
+                + [size_last_batch]
         )
         # batch_sizes = [16, 16, 16, 16]
 
@@ -355,6 +359,8 @@ def main(repo_dir: str, experiment: str):
                 tf.random.set_seed(cfg['random_state'])
                 active_learner.al_batch_size = batch_sizes[i + 1]
                 active_learner.run()
+                tf.keras.backend.clear_session()
+                gc.collect()
 
             results = load_json(active_learner.test_logfile_path)
             results.update({'batch_sizes': batch_sizes})
