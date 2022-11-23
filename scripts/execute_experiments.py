@@ -313,7 +313,7 @@ def main(repo_dir: str, experiment: str):
                 train_size=cfg['splits'][0],
                 test_dataset=dataset_oos_test,
                 test_logfile_path=os.path.join(
-                    cfg['result_dir'], cfg['test_logfile_'] + f'{mode}.json'
+                    cfg['result_dir'], cfg['test_logfile'] + f'_{mode}.json'
                 ),
                 acq_logfile_path=os.path.join(
                     cfg['result_dir'], 'acq_logfile_' + f'{mode}.json'
