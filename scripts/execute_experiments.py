@@ -275,7 +275,7 @@ def main(repo_dir: str, experiment: str):
             save_weights_only=True,
         )
         tf.random.set_seed(cfg['random_state'])
-        # trainer_pretraining.fit(dataset_is_train, dataset_is_val)
+        trainer_pretraining.fit(dataset_is_train, dataset_is_val)
 
         trainer_args_pretraining = dict(
             {
@@ -285,8 +285,6 @@ def main(repo_dir: str, experiment: str):
             },
             **trainer_args
         )
-        # keys_bugfix = random.sample(dataset_oos_train.keys, 64)
-        # dataset_oos_train = subset_dataset(dataset_oos_train, keys_bugfix)
         num_max_batches = (
                 (len(dataset_oos_train.keys) - (5 * 128 + 5 * 256 + 5 * 512)) // 1024
         )
@@ -298,11 +296,10 @@ def main(repo_dir: str, experiment: str):
                 5 * [128] + 5 * [256] + 5 * [512] + num_max_batches * [1024]
                 + [size_last_batch]
         )
-        # batch_sizes = [16, 16, 16, 16]
 
         for args, mode in zip(
-                # [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart'],
-                [trainer_args], ['coldstart']
+                [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
+                # [trainer_args], ['coldstart']
         ):
 
             args['num_workers'] = 1  # avoid file overload due to TF multi-processing
