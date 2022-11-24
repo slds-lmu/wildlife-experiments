@@ -1,5 +1,5 @@
 """In-sample results."""
-
+import random
 import time
 import click
 from copy import deepcopy
@@ -8,6 +8,7 @@ import os
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
+import gc
 from typing import Dict, Final, List
 from wildlifeml.data import subset_dataset
 from wildlifeml.training.trainer import WildlifeTrainer
@@ -266,8 +267,6 @@ def main(repo_dir: str, experiment: str):
 
     # WITH AL (WARM- AND COLDSTART) ----------------------------------------------------
 
-    # TODO check if pre-training actually works as planned here
-    # TODO find good settings for AL
     elif experiment == 'oosample_active':
 
         trainer_pretraining = WildlifeTrainer(**trainer_args)
@@ -286,11 +285,24 @@ def main(repo_dir: str, experiment: str):
             },
             **trainer_args
         )
+        num_max_batches = (
+                (len(dataset_oos_train.keys) - (5 * 128 + 5 * 256 + 5 * 512)) // 1024
+        )
+        size_last_batch = (
+                len(dataset_oos_train.keys) -
+                (5 * 128 + 5 * 256 + 5 * 512 + num_max_batches * 1024)
+        )
+        batch_sizes: Final[List] = (
+                5 * [128] + 5 * [256] + 5 * [512] + num_max_batches * [1024]
+                + [size_last_batch]
+        )
 
         for args, mode in zip(
                 [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
+                # [trainer_args], ['coldstart']
         ):
 
+            args['num_workers'] = 1  # avoid file overload due to TF multi-processing
             trainer = WildlifeTrainer(**args)
             active_learner = ActiveLearner(
                 trainer=trainer,
@@ -302,11 +314,15 @@ def main(repo_dir: str, experiment: str):
                 train_size=cfg['splits'][0],
                 test_dataset=dataset_oos_test,
                 test_logfile_path=os.path.join(
-                    cfg['result_dir'], cfg['test_logfile'] + f'{mode}.json'
+                    cfg['result_dir'], cfg['test_logfile'] + f'_{mode}.json'
+                ),
+                acq_logfile_path=os.path.join(
+                    cfg['result_dir'], 'acq_logfile_' + f'{mode}.json'
                 ),
                 meta_dict=stations_dict,
                 active_directory=cfg['active_dir'],
-                state_cache=os.path.join(cfg['active_dir'], '.activecache.json')
+                state_cache=os.path.join(cfg['active_dir'], '.activecache.json'),
+                al_batch_size=batch_sizes[0]
             )
 
             print('---> Running initial AL iteration')
@@ -316,8 +332,14 @@ def main(repo_dir: str, experiment: str):
             active_learner.run()
             active_learner.do_fresh_start = False
 
-            for i in range(cfg['al_iterations']):
-                print(f'---> Starting AL iteration {i + 1}')
+            # Set AL iterations to maximum or as specified in config
+            if cfg['al_iterations'] < 0:
+                al_iterations = len(batch_sizes) - 1
+            else:
+                al_iterations = min(cfg['al_iterations'], len(batch_sizes) - 1)
+
+            for i in range(al_iterations):
+                print(f'---> Starting AL iteration {i + 1}/{al_iterations + 1}')
                 keys_to_label = [
                     k for k, _ in load_csv(
                         os.path.join(cfg['active_dir'], 'active_labels.csv')
@@ -332,9 +354,13 @@ def main(repo_dir: str, experiment: str):
                 )
                 print('---> Supplied fresh labeled data')
                 tf.random.set_seed(cfg['random_state'])
+                active_learner.al_batch_size = batch_sizes[i + 1]
                 active_learner.run()
+                tf.keras.backend.clear_session()
+                gc.collect()
 
             results = load_json(active_learner.test_logfile_path)
+            results.update({'batch_sizes': batch_sizes})
             save_as_json(
                 results,
                 os.path.join(
