@@ -62,11 +62,15 @@ def main(repo_dir: str, experiment: str):
     dataset_is_train = load_pickle(
         os.path.join(cfg['data_dir'], 'dataset_is_train.pkl')
     )
-    dataset_is_val = load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_val.pkl'))
+    dataset_is_val = load_pickle(
+        os.path.join(cfg['data_dir'], 'dataset_is_val.pkl')
+    )
     dataset_is_trainval = load_pickle(os.path.join(
         cfg['data_dir'], 'dataset_is_trainval.pkl')
     )
-    dataset_is_test = load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_test.pkl'))
+    dataset_is_test = load_pickle(
+        os.path.join(cfg['data_dir'], 'dataset_is_test.pkl')
+    )
     dataset_oos_train = load_pickle(
         os.path.join(cfg['data_dir'], 'dataset_oos_train.pkl')
     )
@@ -76,14 +80,14 @@ def main(repo_dir: str, experiment: str):
 
     transfer_callbacks = [
         EarlyStopping(
-            monitor=cfg['earlystop_metric'], 
+            monitor=cfg['earlystop_metric'],
             patience=cfg['transfer_patience'],
         )
     ]
 
     finetune_callbacks = [
         EarlyStopping(
-            monitor=cfg['earlystop_metric'], 
+            monitor=cfg['earlystop_metric'],
             patience=cfg['finetune_patience'],
         )
     ]
@@ -92,7 +96,7 @@ def main(repo_dir: str, experiment: str):
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
         'num_classes': cfg['num_classes'],
-        'transfer_epochs': cfg['transfer_epochs'], 
+        'transfer_epochs': cfg['transfer_epochs'],
         'finetune_epochs': cfg['finetune_epochs'],
         'transfer_optimizer': Adam(learning_rate=cfg['transfer_learning_rate']),
         'finetune_optimizer': Adam(learning_rate=cfg['finetune_learning_rate']),
@@ -103,18 +107,23 @@ def main(repo_dir: str, experiment: str):
         'num_workers': cfg['num_workers'],
         'eval_metrics': cfg['eval_metrics'],
     }
+    empty_class_id = load_json(
+        os.path.join(cfg['data_dir'], 'label_map.json')
+        ).get('empty')
 
     evaluator_is = Evaluator(
         label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
         detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
         dataset=dataset_is_test,
         num_classes=cfg['num_classes'],
+        empty_class_id=empty_class_id,
     )
     evaluator_oos = Evaluator(
         label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
         detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
         dataset=dataset_oos_test,
         num_classes=cfg['num_classes'],
+        empty_class_id=empty_class_id,
     )
 
     # ----------------------------------------------------------------------------------
@@ -132,7 +141,10 @@ def main(repo_dir: str, experiment: str):
         results_perf = evaluator_is.evaluate(trainer_perf_is)
         save_as_json(
             results_perf,
-            os.path.join(cfg['result_dir'], f'{timestr}_results_insample_perf.json')
+            os.path.join(
+                cfg['result_dir'],
+                f'{timestr}_results_insample_perf.json'
+            )
         )
 
     # EMPTY VS NON-EMPTY ---------------------------------------------------------------
@@ -140,10 +152,7 @@ def main(repo_dir: str, experiment: str):
     elif experiment == 'insample_empty':
 
         # Get truly empty images
-        empty_class = load_json(
-            os.path.join(cfg['data_dir'], 'label_map.json')
-        ).get('empty')
-        true_empty = set([k for k, v in label_dict.items() if v == str(empty_class)])
+        true_empty = set([k for k, v in label_dict.items() if v == str(empty_class_id)])
         true_nonempty = set(label_dict.keys()) - set(true_empty)
 
         # Compute empty-detection performance of MD stand-alone and for entire pipeline
@@ -213,7 +222,8 @@ def main(repo_dir: str, experiment: str):
             print('---> Training on wildlife data')
             tf.random.set_seed(cfg['random_state'])
             trainer_empty.fit(
-                train_dataset=dataset_train_thresh, val_dataset=dataset_val_thresh
+                train_dataset=dataset_train_thresh,
+                val_dataset=dataset_val_thresh,
             )
             print('---> Evaluating on test data')
             evaluator = Evaluator(
@@ -221,6 +231,7 @@ def main(repo_dir: str, experiment: str):
                 detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
                 dataset=dataset_is_test,
                 num_classes=trainer_empty.get_num_classes(),
+                empty_class_id=empty_class_id,
                 conf_threshold=float(threshold),
             )
             conf_ppl = evaluator.evaluate(trainer_empty).get('conf_empty')
@@ -244,7 +255,10 @@ def main(repo_dir: str, experiment: str):
 
         save_as_json(
             results_empty,
-            os.path.join(cfg['result_dir'], f'{timestr}_results_insample_empty.json')
+            os.path.join(
+                cfg['result_dir'],
+                f'{timestr}_results_insample_empty.json'
+            )
         )
 
     # ----------------------------------------------------------------------------------
@@ -257,12 +271,18 @@ def main(repo_dir: str, experiment: str):
         print('---> Training on in-sample data')
         trainer_perf_oos = WildlifeTrainer(**trainer_args)
         tf.random.set_seed(cfg['random_state'])
-        trainer_perf_oos.fit(train_dataset=dataset_is_train, val_dataset=dataset_is_val)
+        trainer_perf_oos.fit(
+            train_dataset=dataset_is_train, 
+            val_dataset=dataset_is_val
+        )
         print('---> Evaluating on out-of-sample data')
         results_perf_passive = evaluator_oos.evaluate(trainer_perf_oos)
         save_as_json(
             results_perf_passive,
-            os.path.join(cfg['result_dir'], f'{timestr}_results_oosample_perf.json')
+            os.path.join(
+                cfg['result_dir'], 
+                f'{timestr}_results_oosample_perf.json'
+            )
         )
 
     # WITH AL (WARM- AND COLDSTART) ----------------------------------------------------
@@ -308,8 +328,7 @@ def main(repo_dir: str, experiment: str):
                 trainer=trainer,
                 pool_dataset=dataset_oos_train,
                 label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
-                empty_class_id=load_json(os.path.join(
-                    cfg['data_dir'], 'label_map.json')).get('empty'),
+                empty_class_id=empty_class_id,
                 acquisitor_name='entropy',
                 train_size=cfg['splits'][0],
                 test_dataset=dataset_oos_test,
@@ -364,7 +383,8 @@ def main(repo_dir: str, experiment: str):
             save_as_json(
                 results,
                 os.path.join(
-                    cfg['result_dir'], f'{timestr}_results_oosample_active_{mode}.json'
+                    cfg['result_dir'],
+                    f'{timestr}_results_oosample_active_{mode}.json'
                 )
             )
 
