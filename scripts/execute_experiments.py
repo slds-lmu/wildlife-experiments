@@ -109,7 +109,7 @@ def main(repo_dir: str, experiment: str):
     }
     empty_class_id = load_json(
         os.path.join(cfg['data_dir'], 'label_map.json')
-        ).get('empty')
+    ).get('empty')
 
     evaluator_is = Evaluator(
         label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
