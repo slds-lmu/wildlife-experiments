@@ -38,14 +38,17 @@ def build_df_pred(
         pred_class.append(pred_img.argmax())
         pred_score.append(round(pred_img.max(), 3))
         n_preds.append(len(ids_bbox))
-        pred_classes.append([format(x)
-                            for x in preds_bbox[ids_bbox].argmax(1)])
+        pred_classes.append([format(x)for x in preds_bbox[ids_bbox].argmax(1)])
         pred_confs.append([round(x, 3) for x in preds_bbox[ids_bbox].max(1)])
-        md_confs.append([round(detector_dict[k]['conf'], 2)
-                        for k in [keys_bbox[i] for i in ids_bbox]])
-        md_bboxs.append([detector_dict[k]['bbox']
-                        for k in [keys_bbox[i] for i in ids_bbox]])
-
+        md_confs.append(
+            [
+                round(detector_dict[k]['conf'], 2)
+                for k in [keys_bbox[i] for i in ids_bbox]
+            ]
+        )
+        md_bboxs.append(
+            [detector_dict[k]['bbox'] for k in [keys_bbox[i] for i in ids_bbox]]
+        )
         all_scores.append([round(x, 3) for x in pred_img])
 
     df = pd.DataFrame()
@@ -73,8 +76,7 @@ def labelize_df_pred(
     df = df_pred.copy()
     df['true_class'] = df['true_class'].map(translator_dict)
     df['pred_class'] = df['pred_class'].map(translator_dict)
-    df['pred_classes'] = [[translator_dict[p]
-                           for p in ps] for ps in df['pred_classes']]
+    df['pred_classes'] = [[translator_dict[p] for p in ps] for ps in df['pred_classes']]
     return df
 
 
@@ -105,7 +107,7 @@ def inspect_confusion(df_pred, normalize=True, labels=None, ax=None):
         y_pred=y_pred,
         labels=labels,
         normalize='true',
-        )
+    )
     if normalize:
         cm = cm_norm
     else:
@@ -158,17 +160,10 @@ def inspect_misclasses(
 
         for index in range(n_displays):
             score_dict = dict(
-                zip(
-                    translator_dict.values(),
-                    df_miss.loc[index, 'all_scores'],
-                )
+                zip(translator_dict.values(), df_miss.loc[index, 'all_scores'])
             )
             score_dict = dict(
-                sorted(
-                    score_dict.items(),
-                    key=lambda x: x[1],
-                    reverse=descending,
-                )
+                sorted(score_dict.items(), key=lambda x: x[1], reverse=descending)
             )
             img_path = df_miss.loc[index, 'img_path']
             md_confs = df_miss.loc[index, 'md_confs']
@@ -184,15 +179,15 @@ def inspect_misclasses(
             ax.imshow(image)
             plt.show()
             plt.close()
-            print(f"img_name:      {df_miss.loc[index, 'img_name']}")
-            print(f"true_class:    {df_miss.loc[index, 'true_class']}")
-            print(f"pred_class:    {df_miss.loc[index, 'pred_class']}")
-            print(f"pred_score:    {df_miss.loc[index, 'pred_score']}")
-            print(f"n_preds:       {df_miss.loc[index, 'n_preds']}")
-            print(f"pred_classes:  {df_miss.loc[index, 'pred_classes']}")
-            print(f"pred_confs:    {df_miss.loc[index, 'pred_confs']}")
-            print(f"md_confs:      {df_miss.loc[index, 'md_confs']}")
-            print(f"score_dict:    {score_dict}")
+            print(f"img_name: {df_miss.loc[index, 'img_name']}")
+            print(f"true_class: {df_miss.loc[index, 'true_class']}")
+            print(f"pred_class: {df_miss.loc[index, 'pred_class']}")
+            print(f"pred_score: {df_miss.loc[index, 'pred_score']}")
+            print(f"n_preds: {df_miss.loc[index, 'n_preds']}")
+            print(f"pred_classes: {df_miss.loc[index, 'pred_classes']}")
+            print(f"pred_confs: {df_miss.loc[index, 'pred_confs']}")
+            print(f"md_confs: {df_miss.loc[index, 'md_confs']}")
+            print(f"score_dict: {score_dict}")
 
 
 def plot_frequencies(df, labels, ax=None):
@@ -225,34 +220,34 @@ def plot_class_performance(df_pred, df_meta, labels, ax=None):
         fig, ax = plt.subplots(figsize=(6, 4))
     width = 0.1
     ax.bar(
-        x=x+0*width,
+        x=x + 0 * width,
         height=frequencies,
         width=width,
         color='black',
         label='frequency',
     )
     ax.bar(
-        x=x+1*width,
+        x= x + 1 * width,
         height=precisions,
         width=width,
         color='#165C8D',
         label='precision',
     )
     ax.bar(
-        x=x+2*width,
+        x=x + 2 * width,
         height=recalls,
         width=width,
         color='#167F0F',
         label='recall',
     )
     ax.bar(
-        x=x+3*width,
+        x=x + 3 * width,
         height=f1s,
         width=width,
         color='#CE0917',
         label='f1',
     )
-    ax.set_xticks(x+width, labels, rotation=30, fontsize=8)
+    ax.set_xticks(x + width, labels, rotation=30, fontsize=8)
     ax.legend(loc='best', fontsize=7)
     if ax is not None:
         plt.show()
