@@ -74,6 +74,12 @@ def main(repo_dir: str, experiment: str):
     dataset_oos_train = load_pickle(
         os.path.join(cfg['data_dir'], 'dataset_oos_train.pkl')
     )
+    dataset_oos_val = load_pickle(
+        os.path.join(cfg['data_dir'], 'dataset_oos_val.pkl')
+    )
+    dataset_oos_trainval = load_pickle(os.path.join(
+        cfg['data_dir'], 'dataset_oos_trainval.pkl')
+    )
     dataset_oos_test = load_pickle(os.path.join(
         cfg['data_dir'], 'dataset_oos_test.pkl')
     )
@@ -289,6 +295,25 @@ def main(repo_dir: str, experiment: str):
 
     elif experiment == 'oosample_active':
 
+        # Get perf upper limit by training on all data
+        print('---> Training on out-of-sample data')
+        trainer_al_optimal = WildlifeTrainer(**trainer_args)
+        tf.random.set_seed(cfg['random_state'])
+        trainer_al_optimal.fit(
+            train_dataset=dataset_oos_train, val_dataset=dataset_oos_val
+        )
+        print('---> Evaluating on out-of-sample data')
+        results_al_optimal = evaluator_oos.evaluate(trainer_al_optimal)
+        save_as_json(
+            results_al_optimal,
+            os.path.join(
+                cfg['result_dir'],
+                f'{timestr}_results_oosample_active_optimal.json'
+            )
+        )
+        exit()
+
+        # Pre-train for warm start
         trainer_pretraining = WildlifeTrainer(**trainer_args)
         trainer_pretraining.finetune_callbacks = keras.callbacks.ModelCheckpoint(
             filepath=os.path.join(cfg['data_dir'], cfg['pretraining_ckpt']),
@@ -305,11 +330,12 @@ def main(repo_dir: str, experiment: str):
             },
             **trainer_args
         )
+        # Compute batch sizes
         num_max_batches = (
-                (len(dataset_oos_train.keys) - (5 * 128 + 5 * 256 + 5 * 512)) // 1024
+                (len(dataset_oos_trainval.keys) - (5 * 128 + 5 * 256 + 5 * 512)) // 1024
         )
         size_last_batch = (
-                len(dataset_oos_train.keys) -
+                len(dataset_oos_trainval.keys) -
                 (5 * 128 + 5 * 256 + 5 * 512 + num_max_batches * 1024)
         )
         batch_sizes: Final[List] = (
@@ -318,15 +344,15 @@ def main(repo_dir: str, experiment: str):
         )
 
         for args, mode in zip(
-                [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
-                # [trainer_args], ['coldstart']
+                # [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
+                [trainer_args], ['coldstart']
         ):
 
             args['num_workers'] = 1  # avoid file overload due to TF multi-processing
             trainer = WildlifeTrainer(**args)
             active_learner = ActiveLearner(
                 trainer=trainer,
-                pool_dataset=dataset_oos_train,
+                pool_dataset=dataset_oos_trainval,
                 label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
                 empty_class_id=empty_class_id,
                 acquisitor_name='entropy',
