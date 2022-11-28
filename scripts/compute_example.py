@@ -5,6 +5,8 @@ import albumentations as A
 import click
 import os
 from typing import Dict, Final, List
+import math
+import gc
 
 import numpy as np
 import tensorflow as tf
@@ -146,7 +148,7 @@ def main(config_file: str, task: str):
             if mode in ['train', 'val', 'pretrain']:
                 _, keys_nonempty = separate_empties(
                     detector_file_path=detector_file_path,
-                    conf_threshold=cfg['md_conf']
+                    conf_threshold=float(cfg['md_conf'])
                 )
                 all_keys = list(set(all_keys).intersection(set(keys_nonempty)))
 
@@ -224,6 +226,11 @@ def main(config_file: str, task: str):
         else:
             trainer = WildlifeTrainer(**trainer_args)
 
+        # Get id of empty class
+        empty_class_id = load_json(
+            os.path.join(cfg['data_dir'], 'label_map_train.json')
+        ).get('empty')
+
         # Perform standard (passive) learning
 
         if task == 'train_passive':
@@ -242,6 +249,7 @@ def main(config_file: str, task: str):
                 ),
                 dataset=dataset_test,
                 num_classes=cfg['num_classes'],
+                empty_class_id=empty_class_id,
             )
             # Train
             print('---> Training on wildlife data')
@@ -287,6 +295,7 @@ def main(config_file: str, task: str):
 
         else:
 
+            trainer.num_workers = 1  # avoid file overload due to TF multi-processing
             active_learner = ActiveLearner(
                 trainer=trainer,
                 pool_dataset=dataset_train,
@@ -311,8 +320,13 @@ def main(config_file: str, task: str):
             active_learner.run()
             active_learner.do_fresh_start = False
 
-            for i in range(cfg['al_iterations']):
-                print(f'---> Starting AL iteration {i + 1}')
+            max_iterations = math.ceil(
+                (len(dataset_train.keys) - cfg['al_batch_size']) / cfg['al_batch_size']
+            )
+            al_iterations = min(cfg['al_iterations'], max_iterations)
+
+            for i in range(al_iterations):
+                print(f'---> Starting AL iteration {i + 1}/{al_iterations}')
                 if not eval(cfg['human_annotation']):
                     keys_to_label = [
                         k for k, _ in load_csv(
@@ -334,6 +348,8 @@ def main(config_file: str, task: str):
                     print('---> Supplied fresh labeled data')
                     tf.random.set_seed(cfg['random_state'])
                     active_learner.run()
+                    tf.keras.backend.clear_session()
+                    gc.collect()
 
             results = load_json(active_learner.test_logfile_path)
             save_as_json(results, cfg['result_file'])
