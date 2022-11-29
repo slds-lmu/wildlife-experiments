@@ -23,8 +23,9 @@ from wildlifeml.utils.io import (
     load_csv,
     load_json,
     load_pickle,
+    save_as_csv,
     save_as_json,
-    save_as_csv
+    save_as_pickle,
 )
 from wildlifeml.utils.misc import flatten_list
 from tensorflow.keras.callbacks import EarlyStopping
@@ -51,7 +52,8 @@ def main(repo_dir: str, experiment: str):
 
     # Get metadata
     label_dict = {
-        k: v for k, v in load_csv(os.path.join(cfg['data_dir'], cfg['label_file']))
+        k: v
+        for k, v in load_csv(os.path.join(cfg['data_dir'], cfg['label_file']))
     }
     stations_dict = {
         k: {'station': v}
@@ -104,8 +106,8 @@ def main(repo_dir: str, experiment: str):
         'num_classes': cfg['num_classes'],
         'transfer_epochs': cfg['transfer_epochs'],
         'finetune_epochs': cfg['finetune_epochs'],
-        'transfer_optimizer': Adam(learning_rate=cfg['transfer_learning_rate']),
-        'finetune_optimizer': Adam(learning_rate=cfg['finetune_learning_rate']),
+        'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
+        'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
         'finetune_layers': cfg['finetune_layers'],
         'model_backbone': cfg['model_backbone'],
         'transfer_callbacks': transfer_callbacks,
@@ -142,14 +144,25 @@ def main(repo_dir: str, experiment: str):
         trainer_perf_is = WildlifeTrainer(**trainer_args)
         print('---> Training on wildlife data')
         tf.random.set_seed(cfg['random_state'])
-        trainer_perf_is.fit(train_dataset=dataset_is_train, val_dataset=dataset_is_val)
+        trainer_perf_is.fit(
+            train_dataset=dataset_is_train,
+            val_dataset=dataset_is_val
+        )
         print('---> Evaluating on test data')
         results_perf = evaluator_is.evaluate(trainer_perf_is)
+        details_perf = evaluator_is.get_details()
         save_as_json(
             results_perf,
             os.path.join(
                 cfg['result_dir'],
                 f'{timestr}_results_insample_perf.json'
+            )
+        )
+        save_as_pickle(
+            details_perf,
+            os.path.join(
+                cfg['result_dir'],
+                f'{timestr}_details_insample_perf.pkl'
             )
         )
 
@@ -161,12 +174,14 @@ def main(repo_dir: str, experiment: str):
         true_empty = set([k for k, v in label_dict.items() if v == str(empty_class_id)])
         true_nonempty = set(label_dict.keys()) - set(true_empty)
 
-        # Compute empty-detection performance of MD stand-alone and for entire pipeline
+        # Compute empty-detection performance of MD stand-alone
+        # and for entire pipeline
 
         results_empty = {
             'names': ['ours', 'progressive', 'norouzzadeh'],
             'thresholds': [cfg['md_conf'], THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
         }
+        details_empty = {}
         tnr_md, tpr_md, fnr_md, fpr_md = [], [], [], []
         tnr_ppl, tpr_ppl, fnr_ppl, fpr_ppl = [], [], [], []
 
@@ -182,7 +197,8 @@ def main(repo_dir: str, experiment: str):
             keys_nonempty_bbox = list(
                 set(keys_nonempty_bbox).intersection(set(dataset_is_trainval.keys))
             )
-            keys_empty_img = list(set([map_bbox_to_img(k) for k in keys_empty_bbox]))
+            keys_empty_img = list(
+                set([map_bbox_to_img(k) for k in keys_empty_bbox]))
             keys_nonempty_img = list(
                 set([map_bbox_to_img(k) for k in keys_nonempty_bbox])
             )
@@ -245,6 +261,7 @@ def main(repo_dir: str, experiment: str):
             tpr_ppl.append(conf_ppl.get('tpr'))
             fnr_ppl.append(conf_ppl.get('fnr'))
             fpr_ppl.append(conf_ppl.get('fpr'))
+            details_empty[threshold] = evaluator.get_details()
 
         results_empty.update(
             {
@@ -266,6 +283,13 @@ def main(repo_dir: str, experiment: str):
                 f'{timestr}_results_insample_empty.json'
             )
         )
+        save_as_pickle(
+            details_empty,
+            os.path.join(
+                cfg['result_dir'],
+                f'{timestr}_details_insample_empty.pkl'
+            )
+        )
 
     # ----------------------------------------------------------------------------------
     # OUT-OF-SAMPLE --------------------------------------------------------------------
@@ -278,16 +302,24 @@ def main(repo_dir: str, experiment: str):
         trainer_perf_oos = WildlifeTrainer(**trainer_args)
         tf.random.set_seed(cfg['random_state'])
         trainer_perf_oos.fit(
-            train_dataset=dataset_is_train, 
+            train_dataset=dataset_is_train,
             val_dataset=dataset_is_val
         )
         print('---> Evaluating on out-of-sample data')
         results_perf_passive = evaluator_oos.evaluate(trainer_perf_oos)
+        details_perf_passive = evaluator_oos.get_details()
         save_as_json(
             results_perf_passive,
             os.path.join(
-                cfg['result_dir'], 
+                cfg['result_dir'],
                 f'{timestr}_results_oosample_perf.json'
+            )
+        )
+        save_as_pickle(
+            details_perf_passive,
+            os.path.join(
+                cfg['result_dir'],
+                f'{timestr}_details_oosample_perf.pkl'
             )
         )
 
