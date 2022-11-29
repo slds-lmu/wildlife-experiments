@@ -106,9 +106,9 @@ def main(repo_dir: str):
     )
 
     # Split out-of-sample keys into train/test (no val required in experiments)
-    keys_oos_train, _, keys_oos_test = do_stratified_splitting(
+    keys_oos_train, keys_oos_val, keys_oos_test = do_stratified_splitting(
         img_keys=keys_oos,
-        splits=(cfg['splits'][0] + cfg['splits'][1], 0.0, cfg['splits'][2]),
+        splits=cfg['splits'],
         meta_dict=stations_dict,
         random_state=cfg['random_state']
     )
@@ -118,6 +118,7 @@ def main(repo_dir: str):
     keys_is_val = flatten_list([dataset.mapping_dict[k] for k in keys_is_val])
     keys_is_test = flatten_list([dataset.mapping_dict[k] for k in keys_is_test])
     keys_oos_train = flatten_list([dataset.mapping_dict[k] for k in keys_oos_train])
+    keys_oos_val = flatten_list([dataset.mapping_dict[k] for k in keys_oos_val])
     keys_oos_test = flatten_list([dataset.mapping_dict[k] for k in keys_oos_test])
 
     # Remove empty images from train/val keys (training is only based on non-empty
@@ -129,6 +130,7 @@ def main(repo_dir: str):
     keys_is_train = list(set(keys_is_train).intersection(set(keys_all_nonempty)))
     keys_is_val = list(set(keys_is_val).intersection(set(keys_all_nonempty)))
     keys_oos_train = list(set(keys_oos_train).intersection(set(keys_all_nonempty)))
+    keys_oos_val = list(set(keys_oos_val).intersection(set(keys_all_nonempty)))
 
     # Create data subsets from different lists of keys
     for keyset, mode in zip(
@@ -138,6 +140,8 @@ def main(repo_dir: str):
                 keys_is_train + keys_is_val,
                 keys_is_test,
                 keys_oos_train,
+                keys_oos_val,
+                keys_oos_train + keys_oos_val,
                 keys_oos_test,
             ],
             [
@@ -146,6 +150,8 @@ def main(repo_dir: str):
                 'is_trainval',
                 'is_test',
                 'oos_train',
+                'oos_val',
+                'oos_trainval',
                 'oos_test'
             ]
     ):
