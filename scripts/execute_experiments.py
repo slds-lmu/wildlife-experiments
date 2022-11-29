@@ -311,7 +311,6 @@ def main(repo_dir: str, experiment: str):
                 f'{timestr}_results_oosample_active_optimal.json'
             )
         )
-        exit()
 
         # Pre-train for warm start
         trainer_pretraining = WildlifeTrainer(**trainer_args)
