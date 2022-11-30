@@ -335,9 +335,10 @@ def main(repo_dir: str, experiment: str):
             train_dataset=dataset_oos_train, val_dataset=dataset_oos_val
         )
         print('---> Evaluating on out-of-sample data')
-        results_al_optimal = evaluator_oos.evaluate(trainer_al_optimal)
+        _ = evaluator_oos.evaluate(trainer_al_optimal)
+        details_al_optimal = evaluator_oos.get_details()
         save_as_json(
-            results_al_optimal,
+            details_al_optimal,
             os.path.join(
                 cfg['result_dir'],
                 f'{timestr}_results_oosample_active_optimal.json'
@@ -375,8 +376,8 @@ def main(repo_dir: str, experiment: str):
         )
 
         for args, mode in zip(
-                # [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
-                [trainer_args], ['coldstart']
+                [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
+                # [trainer_args], ['coldstart']
         ):
 
             args['num_workers'] = 1  # avoid file overload due to TF multi-processing
