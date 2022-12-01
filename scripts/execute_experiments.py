@@ -337,7 +337,7 @@ def main(repo_dir: str, experiment: str):
         print('---> Evaluating on out-of-sample data')
         _ = evaluator_oos.evaluate(trainer_al_optimal)
         details_al_optimal = evaluator_oos.get_details()
-        save_as_json(
+        save_as_pickle(
             details_al_optimal,
             os.path.join(
                 cfg['result_dir'],
@@ -436,9 +436,9 @@ def main(repo_dir: str, experiment: str):
                 tf.keras.backend.clear_session()
                 gc.collect()
 
-            results = load_json(active_learner.test_logfile_path)
+            results = load_pickle(active_learner.test_logfile_path)
             results.update({'batch_sizes': batch_sizes})
-            save_as_json(
+            save_as_pickle(
                 results,
                 os.path.join(
                     cfg['result_dir'],
