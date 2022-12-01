@@ -328,31 +328,31 @@ def main(repo_dir: str, experiment: str):
     elif experiment == 'oosample_active':
 
         # Get perf upper limit by training on all data
-        print('---> Training on out-of-sample data')
-        trainer_al_optimal = WildlifeTrainer(**trainer_args)
-        tf.random.set_seed(cfg['random_state'])
-        trainer_al_optimal.fit(
-            train_dataset=dataset_oos_train, val_dataset=dataset_oos_val
-        )
-        print('---> Evaluating on out-of-sample data')
-        _ = evaluator_oos.evaluate(trainer_al_optimal)
-        details_al_optimal = evaluator_oos.get_details()
-        save_as_pickle(
-            details_al_optimal,
-            os.path.join(
-                cfg['result_dir'],
-                f'{timestr}_results_oosample_active_optimal.json'
-            )
-        )
+        # print('---> Training on out-of-sample data')
+        # trainer_al_optimal = WildlifeTrainer(**trainer_args)
+        # tf.random.set_seed(cfg['random_state'])
+        # trainer_al_optimal.fit(
+        #     train_dataset=dataset_oos_train, val_dataset=dataset_oos_val
+        # )
+        # print('---> Evaluating on out-of-sample data')
+        # _ = evaluator_oos.evaluate(trainer_al_optimal)
+        # details_al_optimal = evaluator_oos.get_details()
+        # save_as_pickle(
+        #     details_al_optimal,
+        #     os.path.join(
+        #         cfg['result_dir'],
+        #         f'{timestr}_results_oosample_active_optimal.json'
+        #     )
+        # )
 
         # Pre-train for warm start
-        trainer_pretraining = WildlifeTrainer(**trainer_args)
-        trainer_pretraining.finetune_callbacks = keras.callbacks.ModelCheckpoint(
-            filepath=os.path.join(cfg['data_dir'], cfg['pretraining_ckpt']),
-            save_weights_only=True,
-        )
-        tf.random.set_seed(cfg['random_state'])
-        trainer_pretraining.fit(dataset_is_train, dataset_is_val)
+        # trainer_pretraining = WildlifeTrainer(**trainer_args)
+        # trainer_pretraining.finetune_callbacks = keras.callbacks.ModelCheckpoint(
+        #     filepath=os.path.join(cfg['data_dir'], cfg['pretraining_ckpt']),
+        #     save_weights_only=True,
+        # )
+        # tf.random.set_seed(cfg['random_state'])
+        # trainer_pretraining.fit(dataset_is_train, dataset_is_val)
 
         trainer_args_pretraining = dict(
             {
@@ -376,8 +376,8 @@ def main(repo_dir: str, experiment: str):
         )
 
         for args, mode in zip(
-                [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
-                # [trainer_args], ['coldstart']
+                # [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
+                [trainer_args], ['coldstart']
         ):
 
             args['num_workers'] = 1  # avoid file overload due to TF multi-processing
@@ -391,10 +391,10 @@ def main(repo_dir: str, experiment: str):
                 train_size=cfg['splits'][0],
                 test_dataset=dataset_oos_test,
                 test_logfile_path=os.path.join(
-                    cfg['result_dir'], cfg['test_logfile'] + f'_{mode}.json'
+                    cfg['result_dir'], f'{timestr}_eval_logfile_{mode}.json'
                 ),
                 acq_logfile_path=os.path.join(
-                    cfg['result_dir'], 'acq_logfile_' + f'{mode}.json'
+                    cfg['result_dir'], f'{timestr}_acq_logfile_{mode}.json'
                 ),
                 meta_dict=stations_dict,
                 active_directory=cfg['active_dir'],
@@ -436,15 +436,15 @@ def main(repo_dir: str, experiment: str):
                 tf.keras.backend.clear_session()
                 gc.collect()
 
-            results = load_pickle(active_learner.test_logfile_path)
-            results.update({'batch_sizes': batch_sizes})
-            save_as_pickle(
-                results,
-                os.path.join(
-                    cfg['result_dir'],
-                    f'{timestr}_results_oosample_active_{mode}.json'
-                )
-            )
+            # results = load_pickle(active_learner.test_logfile_path)
+            # results.update({'batch_sizes': batch_sizes})
+            # save_as_pickle(
+            #     results,
+            #     os.path.join(
+            #         cfg['result_dir'],
+            #         f'{timestr}_results_oosample_active_{mode}.json'
+            #     )
+            # )
 
     else:
         raise IOError('Unknown experiment')
