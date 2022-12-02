@@ -436,16 +436,6 @@ def main(repo_dir: str, experiment: str):
                 tf.keras.backend.clear_session()
                 gc.collect()
 
-            # results = load_pickle(active_learner.test_logfile_path)
-            # results.update({'batch_sizes': batch_sizes})
-            # save_as_pickle(
-            #     results,
-            #     os.path.join(
-            #         cfg['result_dir'],
-            #         f'{timestr}_results_oosample_active_{mode}.json'
-            #     )
-            # )
-
     else:
         raise IOError('Unknown experiment')
 
