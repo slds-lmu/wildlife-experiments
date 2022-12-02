@@ -507,9 +507,8 @@ def main(repo_dir: str, experiment: str):
             keys_nonempty_bbox = list(
                 set(keys_nonempty_bbox).intersection(set(dataset_is_trainval.keys))
             )
-
             dataset_thresh = subset_dataset(
-                dataset_is_trainval, 
+                dataset_is_trainval,
                 keys_nonempty_bbox
             )
             dataset_train_thresh = subset_dataset(
@@ -526,10 +525,14 @@ def main(repo_dir: str, experiment: str):
                 train_dataset=dataset_train_thresh,
                 val_dataset=dataset_val_thresh
             )
-            
+
             evaluator = Evaluator(
-                label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
-                detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
+                label_file_path=os.path.join(
+                    cfg['data_dir'], cfg['label_file']
+                ),
+                detector_file_path=os.path.join(
+                    cfg['data_dir'], cfg['detector_file']
+                ),
                 dataset=dataset_is_val,
                 num_classes=trainer.get_num_classes(),
                 empty_class_id=empty_class_id,
