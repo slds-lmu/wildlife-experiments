@@ -447,6 +447,12 @@ def main(repo_dir: str, experiment: str):
             )
 
     elif experiment == 'tune':
+        keys_train = list(
+            set([map_bbox_to_img(k) for k in dataset_is_train.keys])
+        )
+        keys_val = list(
+            set([map_bbox_to_img(k) for k in dataset_is_val.keys])
+        )
 
         df = pd.read_csv(os.path.join(repo_dir, 'data/tune.csv'))
         for index, row in df.iterrows():
@@ -495,34 +501,32 @@ def main(repo_dir: str, experiment: str):
                 'num_workers': cfg['num_workers'],
                 'eval_metrics': cfg['eval_metrics'],
             }
-
-            keys_empty_bbox, keys_nonempty_bbox = separate_empties(
-                os.path.join(
-                    cfg['data_dir'], cfg['detector_file']
-                    ), float(md_thresh)
-            )
-            keys_empty_bbox = list(
-                set(keys_empty_bbox).intersection(set(dataset_is_train.keys))
+            _, keys_nonempty_bbox = separate_empties(
+                os.path.join(cfg['data_dir'], cfg['detector_file']), float(md_thresh)
             )
             keys_nonempty_bbox = list(
-                set(keys_nonempty_bbox).intersection(set(dataset_is_train.keys))
+                set(keys_nonempty_bbox).intersection(set(dataset_is_trainval.keys))
             )
 
-            dataset_thresh = subset_dataset(dataset_is_train, keys_nonempty_bbox)
-
-            keys_train = list(set([map_bbox_to_img(k) for k in dataset_thresh.keys]))
-            
+            dataset_thresh = subset_dataset(
+                dataset_is_trainval, 
+                keys_nonempty_bbox
+            )
             dataset_train_thresh = subset_dataset(
                 dataset_thresh,
                 flatten_list([dataset_thresh.mapping_dict[k] for k in keys_train])
             )
-
+            dataset_val_thresh = subset_dataset(
+                dataset_thresh,
+                flatten_list([dataset_thresh.mapping_dict[k] for k in keys_val])
+            )
             trainer = WildlifeTrainer(**trainer_args)
             tf.random.set_seed(cfg['random_state'])
             trainer.fit(
-                train_dataset=dataset_train_thresh, val_dataset=dataset_is_val
+                train_dataset=dataset_train_thresh,
+                val_dataset=dataset_val_thresh
             )
-
+            
             evaluator = Evaluator(
                 label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
                 detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
