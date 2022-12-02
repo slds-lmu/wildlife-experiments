@@ -3,19 +3,33 @@ import numpy as np
 import pandas as pd
 from collections import Counter
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 import seaborn as sns
 import itertools
-from wildlifeml.utils.datasets import map_bbox_to_img
 import cv2
 import random
+from typing import Dict, Final, List
 from sklearn.metrics import (
     accuracy_score,
     recall_score,
     precision_score,
     f1_score,
     classification_report,
-    confusion_matrix)
+    confusion_matrix,
+)
+from wildlifeml.utils.io import (
+    load_csv,
+    load_json,
+    load_pickle,
+    save_as_csv,
+    save_as_json,
+    save_as_pickle,
+)
+
+from wildlifeml.utils.datasets import (
+    map_bbox_to_img,
+    map_preds_to_img,
+    separate_empties,
+)
 
 
 def build_df_pred(
@@ -85,13 +99,6 @@ def labelize_df_pred(
         [inverse_map[p] for p in ps] for ps in df['pred_classes']
         ]
     return df
-
-
-def display_image(img_path, figsize=(6, 6)):
-    fig, ax = plt.subplots(figsize=figsize)
-    ax.imshow(mpimg.imread(img_path))
-    plt.show()
-    plt.close()
 
 
 def get_labels(dataset, label_dict):
@@ -376,3 +383,74 @@ def evaluate_performance(y_true, y_pred, labels, average='macro', pos_label=1):
             ),
     }
     return pref_dict
+
+
+def get_binary_confusion_md(dataset, threshold, repo_dir):
+
+    cfg: Final[Dict] = load_json(os.path.join(repo_dir, 'configs/cfg.json'))
+
+    label_dict = {
+        k: v
+        for k, v in load_csv(os.path.join(cfg['data_dir'], cfg['label_file']))
+    }
+
+    empty_class_id = load_json(
+        os.path.join(cfg['data_dir'], 'label_map.json')
+    ).get('empty')
+
+    true_empty = set(
+        [k for k, v in label_dict.items() if v == str(empty_class_id)]
+    )
+    true_nonempty = set(label_dict.keys()) - set(true_empty)
+
+    # Get imgs that MD classifies as empty
+    keys_empty_bbox, keys_nonempty_bbox = separate_empties(
+        os.path.join(cfg['data_dir'], cfg['detector_file']), float(threshold)
+    )
+    keys_empty_bbox = list(
+        set(keys_empty_bbox).intersection(set(dataset.keys))
+    )
+    keys_nonempty_bbox = list(
+        set(keys_nonempty_bbox).intersection(set(dataset.keys))
+    )
+    keys_empty_img = list(
+        set([map_bbox_to_img(k) for k in keys_empty_bbox])
+    )
+    keys_nonempty_img = list(
+        set([map_bbox_to_img(k) for k in keys_nonempty_bbox])
+    )
+    # Compute confusion metrics for MD stand-alone
+    tn = len(true_empty.intersection(set(keys_empty_img)))
+    tp = len(true_nonempty.intersection(set(keys_nonempty_img)))
+    fn = len(true_nonempty.intersection(set(keys_empty_img)))
+    fp = len(true_empty.intersection(set(keys_nonempty_img)))
+
+    conf_md = {
+        'tnr': tn / (tn + fp) if (tn + fp) > 0 else 0.0,
+        'tpr': tp / (tp + fn) if (tp + fn) > 0 else 0.0,
+        'fnr': fn / (tp + fn) if (tp + fn) > 0 else 0.0,
+        'fpr': fp / (tn + fp) if (tn + fp) > 0 else 0.0,
+    }
+    return conf_md
+
+
+def get_binary_confusion_ppl(y_true, y_pred):
+    tp, tn, fp, fn = 0, 0, 0, 0
+    for true, pred in zip(y_true, y_pred):
+        if true == 'empty':
+            if true == pred:
+                tn += 1
+            else:
+                fp += 1
+        else:
+            if pred == 'empty':
+                fn += 1
+            else:
+                tp += 1
+    conf_ppl = {
+        'tnr': tn / (tn + fp) if (tn + fp) > 0 else 0.0,
+        'tpr': tp / (tp + fn) if (tp + fn) > 0 else 0.0,
+        'fnr': fn / (tp + fn) if (tp + fn) > 0 else 0.0,
+        'fpr': fp / (tn + fp) if (tn + fp) > 0 else 0.0,
+    }
+    return conf_ppl
