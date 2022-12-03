@@ -454,3 +454,29 @@ def get_binary_confusion_ppl(y_true, y_pred):
         'fpr': fp / (tn + fp) if (tn + fp) > 0 else 0.0,
     }
     return conf_ppl
+
+
+def _escape_latex(s):
+    return (
+        s.replace("\\", "ab2§=§8yz")  # rare string for final conversion: avoid \\ clash
+        .replace("ab2§=§8yz ", "ab2§=§8yz\\space ")  # since \backslash gobbles spaces
+        .replace("&", "\\&")
+        .replace("%", "\\%")
+        .replace("$", "\\$")
+        .replace("#", "\\#")
+        .replace("_", "\\_")
+        .replace("{", "\\{")
+        .replace("}", "\\}")
+        .replace("~ ", "~\\space ")  # since \textasciitilde gobbles spaces
+        .replace("~", "\\textasciitilde ")
+        .replace("^ ", "^\\space ")  # since \textasciicircum gobbles spaces
+        .replace("^", "\\textasciicircum ")
+        .replace("ab2§=§8yz", "\\textbackslash ")
+    )
+
+
+def prepare_latex(df):
+    old = [c for c in df.columns]
+    new = [_escape_latex(c) for c in df.columns]
+    df_tex = df.rename(columns=dict(zip(old, new)))
+    return df_tex
