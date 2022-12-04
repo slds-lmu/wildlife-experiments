@@ -372,8 +372,9 @@ def main(repo_dir: str, experiment: str):
         )
         batch_sizes: Final[List] = (
                 5 * [128] + 5 * [256] + 5 * [512] + num_max_batches * [1024]
-                + [size_last_batch]
         )
+        if size_last_batch > 0:
+            batch_sizes.append(size_last_batch)
 
         for args, mode in zip(
                 # [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
@@ -388,7 +389,7 @@ def main(repo_dir: str, experiment: str):
                 label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
                 empty_class_id=empty_class_id,
                 acquisitor_name='entropy',
-                train_size=cfg['splits'][0],
+                train_size=cfg['splits'][0] / (cfg['splits'][0] + cfg['splits'][1]),
                 test_dataset=dataset_oos_test,
                 test_logfile_path=os.path.join(
                     cfg['result_dir'], f'{timestr}_eval_logfile_{mode}.json'
@@ -416,7 +417,7 @@ def main(repo_dir: str, experiment: str):
                 al_iterations = min(cfg['al_iterations'], len(batch_sizes) - 1)
 
             for i in range(al_iterations):
-                print(f'---> Starting AL iteration {i + 1}/{al_iterations + 1}')
+                print(f'---> Starting AL iteration {i + 1}/{al_iterations}')
                 keys_to_label = [
                     k for k, _ in load_csv(
                         os.path.join(cfg['active_dir'], 'active_labels.csv')
@@ -432,6 +433,10 @@ def main(repo_dir: str, experiment: str):
                 print('---> Supplied fresh labeled data')
                 tf.random.set_seed(cfg['random_state'])
                 active_learner.al_batch_size = batch_sizes[i + 1]
+                print(
+                    f'---> Training with {sum(batch_sizes[:i + 1]) / sum(batch_sizes)} '
+                    f'samples'
+                )
                 active_learner.run()
                 tf.keras.backend.clear_session()
                 gc.collect()
