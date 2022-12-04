@@ -67,8 +67,8 @@ def build_df_pred(
     df['md_bboxs'] = md_bboxs
     df['all_scores'] = all_scores
     df['img_path'] = [os.path.join(image_data_dir, name) for name in img_name]
-    df['true_class'] = df['true_class'].astype(int)
-    df['pred_class'] = df['pred_class'].astype(int)
+    df['true_class'] = df['true_class'].astype(float).astype(int)
+    df['pred_class'] = df['pred_class'].astype(float).astype(int)
     return df
 
 
