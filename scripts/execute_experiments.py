@@ -388,7 +388,7 @@ def main(repo_dir: str, experiment: str):
                 pool_dataset=dataset_oos_trainval,
                 label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
                 empty_class_id=empty_class_id,
-                acquisitor_name='entropy',
+                acquisitor_name='random',  # 'entropy',
                 train_size=cfg['splits'][0] / (cfg['splits'][0] + cfg['splits'][1]),
                 test_dataset=dataset_oos_test,
                 test_logfile_path=os.path.join(
