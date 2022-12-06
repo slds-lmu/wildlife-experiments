@@ -1,3 +1,4 @@
+
 """Prepare config file for experiments."""
 
 import click
@@ -24,7 +25,7 @@ def main(repo_dir: str, root_dir: str, img_dir: str):
         'detector_file': 'images_megadetector.json',
         'mapping_file': 'bbox_map.json',
         'meta_file': 'stations.csv',
-        'md_conf': 0.252828,
+        'md_conf': 0.1,
         'md_batchsize': 32,
         'random_state': 123,
         'splits': (0.7, 0.15, 0.15),
@@ -33,8 +34,8 @@ def main(repo_dir: str, root_dir: str, img_dir: str):
         'transfer_epochs': 200,
         'finetune_epochs': 10,
         'finetune_layers': 1,
-        'transfer_learning_rate': 0.000077,
-        'finetune_learning_rate': 0.001082,
+        'transfer_learning_rate': 1e-4,
+        'finetune_learning_rate': 5e-3,
         'model_backbone': 'xception',
         'num_workers': 16,
         'eval_metrics': ['accuracy'],
