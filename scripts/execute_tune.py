@@ -106,7 +106,7 @@ def main(repo_dir: str):
             'model_backbone': model_backbone,
             'transfer_callbacks': transfer_callbacks,
             'finetune_callbacks': finetune_callbacks,
-            'num_workers': cfg['num_workers'],
+            'num_workers': 3,
             'eval_metrics': cfg['eval_metrics'],
         }
         _, keys_nonempty_bbox = separate_empties(
