@@ -346,13 +346,16 @@ def main(repo_dir: str, experiment: str):
         # )
 
         # Pre-train for warm start
-        # trainer_pretraining = WildlifeTrainer(**trainer_args)
+        trainer_pretraining = WildlifeTrainer(**trainer_args)
         # trainer_pretraining.finetune_callbacks = keras.callbacks.ModelCheckpoint(
         #     filepath=os.path.join(cfg['data_dir'], cfg['pretraining_ckpt']),
         #     save_weights_only=True,
         # )
-        # tf.random.set_seed(cfg['random_state'])
-        # trainer_pretraining.fit(dataset_is_train, dataset_is_val)
+        tf.random.set_seed(cfg['random_state'])
+        trainer_pretraining.fit(dataset_is_train, dataset_is_val)
+        trainer_pretraining.save_model(
+            os.path.join(cfg['data_dir'], cfg['pretraining_ckpt'])
+        )
 
         trainer_args_pretraining = dict(
             {
@@ -378,7 +381,8 @@ def main(repo_dir: str, experiment: str):
 
         for args, mode in zip(
                 # [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
-                [trainer_args], ['coldstart']
+                # [trainer_args], ['coldstart']
+                [trainer_args_pretraining], ['warmstart']
         ):
 
             args['num_workers'] = 1  # avoid file overload due to TF multi-processing
@@ -388,7 +392,7 @@ def main(repo_dir: str, experiment: str):
                 pool_dataset=dataset_oos_trainval,
                 label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
                 empty_class_id=empty_class_id,
-                acquisitor_name='random',  # 'entropy',
+                acquisitor_name='entropy',
                 train_size=cfg['splits'][0] / (cfg['splits'][0] + cfg['splits'][1]),
                 test_dataset=dataset_oos_test,
                 test_logfile_path=os.path.join(
