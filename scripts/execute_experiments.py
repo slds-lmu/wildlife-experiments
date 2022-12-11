@@ -431,10 +431,6 @@ def main(repo_dir: str, experiment: str):
                 print('---> Supplied fresh labeled data')
                 tf.random.set_seed(cfg['random_state'])
                 active_learner.al_batch_size = batch_sizes[i + 1]
-                print(
-                    f'---> Training with {sum(batch_sizes[:i + 1]) / sum(batch_sizes)} '
-                    f'samples'
-                )
                 active_learner.run()
                 tf.keras.backend.clear_session()
                 gc.collect()
