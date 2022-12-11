@@ -376,9 +376,7 @@ def main(repo_dir: str, experiment: str):
             batch_sizes.append(size_last_batch)
 
         for args, mode in zip(
-                # [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
-                # [trainer_args], ['coldstart']
-                [trainer_args_pretraining], ['warmstart']
+                [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
         ):
 
             args['num_workers'] = 1  # avoid file overload due to TF multi-processing
