@@ -164,14 +164,14 @@ def inspect_results(
     if n_displays == 0:
         print('Please increase the number of displaying images (n_displays).')
         return
-    
+
     if which_preds == 'only_true':
         df = df_pred[df_pred['true_class'] == df_pred['pred_class']]
     elif which_preds == 'only_false':
         df = df_pred[df_pred['true_class'] != df_pred['pred_class']]
     elif which_preds == 'mixed':
         df = df_pred
-        
+
     if is_truth:
         df = df[df['true_class'] == test_label]
     else:
@@ -222,7 +222,6 @@ def inspect_results(
         print(f"pred_confs: {df.loc[index, 'pred_confs']}")
         print(f"md_confs: {df.loc[index, 'md_confs']}")
         print(f"score_dict: {score_dict}")
-
 
 
 def plot_frequencies(df, label_map, ax=None):
@@ -466,8 +465,8 @@ def get_binary_confusion_ppl(y_true, y_pred):
 
 def _escape_latex(s):
     return (
-        s.replace("\\", "ab2§=§8yz")  # rare string for final conversion: avoid \\ clash
-        .replace("ab2§=§8yz ", "ab2§=§8yz\\space ")  # since \backslash gobbles spaces
+        s.replace("\\", "ab2§=§8yz")  # rare string for final conversion
+        .replace("ab2§=§8yz ", "ab2§=§8yz\\space ")  # backslash gobbles spaces
         .replace("&", "\\&")
         .replace("%", "\\%")
         .replace("$", "\\$")
