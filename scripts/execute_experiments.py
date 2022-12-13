@@ -151,13 +151,6 @@ def main(repo_dir: str, experiment: str):
         print('---> Evaluating on test data')
         results_perf = evaluator_is.evaluate(trainer_perf_is)
         details_perf = evaluator_is.get_details()
-        save_as_json(
-            results_perf,
-            os.path.join(
-                cfg['result_dir'],
-                f'{timestr}_results_insample_perf.json'
-            )
-        )
         save_as_pickle(
             details_perf,
             os.path.join(
@@ -277,14 +270,6 @@ def main(repo_dir: str, experiment: str):
                 'fpr_ppl': [format(x, '.4f') for x in fpr_ppl],
             }
         )
-
-        save_as_json(
-            results_empty,
-            os.path.join(
-                cfg['result_dir'],
-                f'{timestr}_results_insample_empty.json'
-            )
-        )
         save_as_pickle(
             details_empty,
             os.path.join(
@@ -310,13 +295,7 @@ def main(repo_dir: str, experiment: str):
         print('---> Evaluating on out-of-sample data')
         results_perf_passive = evaluator_oos.evaluate(trainer_perf_oos)
         details_perf_passive = evaluator_oos.get_details()
-        save_as_json(
-            results_perf_passive,
-            os.path.join(
-                cfg['result_dir'],
-                f'{timestr}_results_oosample_perf.json'
-            )
-        )
+
         save_as_pickle(
             details_perf_passive,
             os.path.join(
