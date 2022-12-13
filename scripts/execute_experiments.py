@@ -162,7 +162,7 @@ def main(repo_dir: str, experiment: str):
             details_perf,
             os.path.join(
                 cfg['result_dir'],
-                f'{timestr}_details_insample_perf.pkl'
+                f'{timestr}_details_insample_perf.json'
             )
         )
 
@@ -289,7 +289,7 @@ def main(repo_dir: str, experiment: str):
             details_empty,
             os.path.join(
                 cfg['result_dir'],
-                f'{timestr}_details_insample_empty.pkl'
+                f'{timestr}_details_insample_empty.json'
             )
         )
 
@@ -321,7 +321,7 @@ def main(repo_dir: str, experiment: str):
             details_perf_passive,
             os.path.join(
                 cfg['result_dir'],
-                f'{timestr}_details_oosample_perf.pkl'
+                f'{timestr}_details_oosample_perf.json'
             )
         )
 
