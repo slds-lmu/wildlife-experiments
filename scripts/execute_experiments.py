@@ -191,23 +191,25 @@ def main(repo_dir: str, experiment: str):
             keys_empty_bbox, keys_nonempty_bbox = separate_empties(
                 os.path.join(cfg['data_dir'], cfg['detector_file']), float(threshold)
             )
-            keys_empty_bbox = list(
-                set(keys_empty_bbox).intersection(set(dataset_is_trainval.keys))
-            )
-            keys_nonempty_bbox = list(
+            keys_nonempty_bbox_trainval = list(
                 set(keys_nonempty_bbox).intersection(set(dataset_is_trainval.keys))
             )
-            keys_empty_img = list(
-                set([map_bbox_to_img(k) for k in keys_empty_bbox]))
-            keys_nonempty_img = list(
-                set([map_bbox_to_img(k) for k in keys_nonempty_bbox])
+            keys_empty_bbox_test = list(
+                set(keys_empty_bbox).intersection(set(dataset_is_test.keys))
             )
-
+            keys_nonempty_bbox_test = list(
+                set(keys_nonempty_bbox).intersection(set(dataset_is_test.keys))
+            )
+            keys_empty_img_test = list(
+                set([map_bbox_to_img(k) for k in keys_empty_bbox_test]))
+            keys_nonempty_img_test = list(
+                set([map_bbox_to_img(k) for k in keys_nonempty_bbox_test])
+            )
             # Compute confusion metrics for MD stand-alone
-            tn_md = len(true_empty.intersection(set(keys_empty_img)))
-            tp_md = len(true_nonempty.intersection(set(keys_nonempty_img)))
-            fn_md = len(true_nonempty.intersection(set(keys_empty_img)))
-            fp_md = len(true_empty.intersection(set(keys_nonempty_img)))
+            tn_md = len(true_empty.intersection(set(keys_empty_img_test)))
+            tp_md = len(true_nonempty.intersection(set(keys_nonempty_img_test)))
+            fn_md = len(true_nonempty.intersection(set(keys_empty_img_test)))
+            fp_md = len(true_empty.intersection(set(keys_nonempty_img_test)))
             tnr_md.append(tn_md / (tn_md + fp_md) if (tn_md + fp_md) > 0 else 0.)
             tpr_md.append(tp_md / (tp_md + fn_md) if (tp_md + fn_md) > 0 else 0.)
             fnr_md.append(fn_md / (tp_md + fn_md) if (tp_md + fn_md) > 0 else 0.)
@@ -215,7 +217,7 @@ def main(repo_dir: str, experiment: str):
 
             # Prepare new train and val data according to threshold
 
-            dataset_thresh = subset_dataset(dataset_is_trainval, keys_nonempty_bbox)
+            dataset_thresh = subset_dataset(dataset_is_trainval, keys_nonempty_bbox_trainval)
             share_train = cfg['splits'][0] / (cfg['splits'][0] + cfg['splits'][1])
             share_val = cfg['splits'][1] / (cfg['splits'][0] + cfg['splits'][1])
             imgs_keys = list(set([map_bbox_to_img(k) for k in dataset_thresh.keys]))
@@ -444,7 +446,6 @@ def main(repo_dir: str, experiment: str):
                     f'{timestr}_results_oosample_active_{mode}.json'
                 )
             )
-
     else:
         raise IOError('Unknown experiment')
 
