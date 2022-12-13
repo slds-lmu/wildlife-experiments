@@ -446,7 +446,6 @@ def main(repo_dir: str, experiment: str):
                     f'{timestr}_results_oosample_active_{mode}.json'
                 )
             )
-
     else:
         raise IOError('Unknown experiment')
 

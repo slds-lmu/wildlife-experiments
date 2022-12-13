@@ -1,3 +1,4 @@
+
 """Prepare config file for experiments."""
 
 import click
