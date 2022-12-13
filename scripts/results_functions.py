@@ -150,34 +150,41 @@ def inspect_confusion(df_pred, normalize=True, labels=None, ax=None):
         plt.close()
 
 
-def inspect_misclasses(
+def inspect_results(
     df_pred: pd.DataFrame,
     test_label: str,
     label_map: dict,
     n_displays: int,
     is_truth: bool,
     sorting='descending',
+    which_preds='only_false',
 ):
-
     # sorting can be: ['descending', 'ascending', 'random']
+    # which_preds can be: ['only_true', 'only_false', 'mixed']
     if n_displays == 0:
         print('Please increase the number of displaying images (n_displays).')
         return
-
-    df_mis = df_pred[df_pred['true_class'] != df_pred['pred_class']]
+    
+    if which_preds == 'only_true':
+        df = df_pred[df_pred['true_class'] == df_pred['pred_class']]
+    elif which_preds == 'only_false':
+        df = df_pred[df_pred['true_class'] != df_pred['pred_class']]
+    elif which_preds == 'mixed':
+        df = df_pred
+        
     if is_truth:
-        df_mis = df_mis[df_mis['true_class'] == test_label]
+        df = df[df['true_class'] == test_label]
     else:
-        df_mis = df_mis[df_mis['pred_class'] == test_label]
-    df_mis = df_mis.sort_values(
+        df = df[df['pred_class'] == test_label]
+    df = df.sort_values(
         by=['pred_score'], ascending=False, ignore_index=True,
     )
 
-    n_available = len(df_mis)
+    n_available = len(df)
     if n_displays > n_available:
         print(f'There are {n_available} available images to be displayed.')
     n_displays = min(n_displays, n_available)
-    all_ids = list(df_mis.index)
+    all_ids = list(df.index)
     if sorting == 'ascending':
         ids = all_ids[:n_displays]
     elif sorting == 'descending':
@@ -187,15 +194,15 @@ def inspect_misclasses(
 
     for index in ids:
         score_dict = dict(
-            zip(label_map.keys(), df_mis.loc[index, 'all_scores'])
+            zip(label_map.keys(), df.loc[index, 'all_scores'])
         )
         score_dict = dict(
             sorted(score_dict.items(), key=lambda x: x[1], reverse=True)
         )
-        img_path = df_mis.loc[index, 'img_path']
-        md_confs = df_mis.loc[index, 'md_confs']
-        md_bboxs = df_mis.loc[index, 'md_bboxs']
-        n_preds = df_mis.loc[index, 'n_preds']
+        img_path = df.loc[index, 'img_path']
+        md_confs = df.loc[index, 'md_confs']
+        md_bboxs = df.loc[index, 'md_bboxs']
+        n_preds = df.loc[index, 'n_preds']
 
         fig, ax = plt.subplots(figsize=(6, 6))
         image = cv2.imread(img_path)
@@ -206,15 +213,16 @@ def inspect_misclasses(
         ax.imshow(image)
         plt.show()
         plt.close()
-        print(f"img_name: {df_mis.loc[index, 'img_name']}")
-        print(f"true_class: {df_mis.loc[index, 'true_class']}")
-        print(f"pred_class: {df_mis.loc[index, 'pred_class']}")
-        print(f"pred_score: {df_mis.loc[index, 'pred_score']}")
-        print(f"n_preds: {df_mis.loc[index, 'n_preds']}")
-        print(f"pred_classes: {df_mis.loc[index, 'pred_classes']}")
-        print(f"pred_confs: {df_mis.loc[index, 'pred_confs']}")
-        print(f"md_confs: {df_mis.loc[index, 'md_confs']}")
+        print(f"img_name: {df.loc[index, 'img_name']}")
+        print(f"true_class: {df.loc[index, 'true_class']}")
+        print(f"pred_class: {df.loc[index, 'pred_class']}")
+        print(f"pred_score: {df.loc[index, 'pred_score']}")
+        print(f"n_preds: {df.loc[index, 'n_preds']}")
+        print(f"pred_classes: {df.loc[index, 'pred_classes']}")
+        print(f"pred_confs: {df.loc[index, 'pred_confs']}")
+        print(f"md_confs: {df.loc[index, 'md_confs']}")
         print(f"score_dict: {score_dict}")
+
 
 
 def plot_frequencies(df, label_map, ax=None):
