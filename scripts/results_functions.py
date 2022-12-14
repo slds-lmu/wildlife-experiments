@@ -3,19 +3,33 @@ import numpy as np
 import pandas as pd
 from collections import Counter
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 import seaborn as sns
 import itertools
-from wildlifeml.utils.datasets import map_bbox_to_img
 import cv2
 import random
+from typing import Dict, Final, List
 from sklearn.metrics import (
     accuracy_score,
     recall_score,
     precision_score,
     f1_score,
     classification_report,
-    confusion_matrix)
+    confusion_matrix,
+)
+from wildlifeml.utils.io import (
+    load_csv,
+    load_json,
+    load_pickle,
+    save_as_csv,
+    save_as_json,
+    save_as_pickle,
+)
+
+from wildlifeml.utils.datasets import (
+    map_bbox_to_img,
+    map_preds_to_img,
+    separate_empties,
+)
 
 
 def build_df_pred(
@@ -87,13 +101,6 @@ def labelize_df_pred(
     return df
 
 
-def display_image(img_path, figsize=(6, 6)):
-    fig, ax = plt.subplots(figsize=figsize)
-    ax.imshow(mpimg.imread(img_path))
-    plt.show()
-    plt.close()
-
-
 def get_labels(dataset, label_dict):
     bbox_keys = dataset.keys
     img_keys = [map_bbox_to_img(k) for k in bbox_keys]
@@ -143,34 +150,41 @@ def inspect_confusion(df_pred, normalize=True, labels=None, ax=None):
         plt.close()
 
 
-def inspect_misclasses(
+def inspect_results(
     df_pred: pd.DataFrame,
     test_label: str,
     label_map: dict,
     n_displays: int,
     is_truth: bool,
     sorting='descending',
+    which_preds='only_false',
 ):
-
     # sorting can be: ['descending', 'ascending', 'random']
+    # which_preds can be: ['only_true', 'only_false', 'mixed']
     if n_displays == 0:
         print('Please increase the number of displaying images (n_displays).')
         return
 
-    df_mis = df_pred[df_pred['true_class'] != df_pred['pred_class']]
+    if which_preds == 'only_true':
+        df = df_pred[df_pred['true_class'] == df_pred['pred_class']]
+    elif which_preds == 'only_false':
+        df = df_pred[df_pred['true_class'] != df_pred['pred_class']]
+    elif which_preds == 'mixed':
+        df = df_pred
+
     if is_truth:
-        df_mis = df_mis[df_mis['true_class'] == test_label]
+        df = df[df['true_class'] == test_label]
     else:
-        df_mis = df_mis[df_mis['pred_class'] == test_label]
-    df_mis = df_mis.sort_values(
+        df = df[df['pred_class'] == test_label]
+    df = df.sort_values(
         by=['pred_score'], ascending=False, ignore_index=True,
     )
 
-    n_available = len(df_mis)
+    n_available = len(df)
     if n_displays > n_available:
         print(f'There are {n_available} available images to be displayed.')
     n_displays = min(n_displays, n_available)
-    all_ids = list(df_mis.index)
+    all_ids = list(df.index)
     if sorting == 'ascending':
         ids = all_ids[:n_displays]
     elif sorting == 'descending':
@@ -180,15 +194,15 @@ def inspect_misclasses(
 
     for index in ids:
         score_dict = dict(
-            zip(label_map.keys(), df_mis.loc[index, 'all_scores'])
+            zip(label_map.keys(), df.loc[index, 'all_scores'])
         )
         score_dict = dict(
             sorted(score_dict.items(), key=lambda x: x[1], reverse=True)
         )
-        img_path = df_mis.loc[index, 'img_path']
-        md_confs = df_mis.loc[index, 'md_confs']
-        md_bboxs = df_mis.loc[index, 'md_bboxs']
-        n_preds = df_mis.loc[index, 'n_preds']
+        img_path = df.loc[index, 'img_path']
+        md_confs = df.loc[index, 'md_confs']
+        md_bboxs = df.loc[index, 'md_bboxs']
+        n_preds = df.loc[index, 'n_preds']
 
         fig, ax = plt.subplots(figsize=(6, 6))
         image = cv2.imread(img_path)
@@ -199,14 +213,14 @@ def inspect_misclasses(
         ax.imshow(image)
         plt.show()
         plt.close()
-        print(f"img_name: {df_mis.loc[index, 'img_name']}")
-        print(f"true_class: {df_mis.loc[index, 'true_class']}")
-        print(f"pred_class: {df_mis.loc[index, 'pred_class']}")
-        print(f"pred_score: {df_mis.loc[index, 'pred_score']}")
-        print(f"n_preds: {df_mis.loc[index, 'n_preds']}")
-        print(f"pred_classes: {df_mis.loc[index, 'pred_classes']}")
-        print(f"pred_confs: {df_mis.loc[index, 'pred_confs']}")
-        print(f"md_confs: {df_mis.loc[index, 'md_confs']}")
+        print(f"img_name: {df.loc[index, 'img_name']}")
+        print(f"true_class: {df.loc[index, 'true_class']}")
+        print(f"pred_class: {df.loc[index, 'pred_class']}")
+        print(f"pred_score: {df.loc[index, 'pred_score']}")
+        print(f"n_preds: {df.loc[index, 'n_preds']}")
+        print(f"pred_classes: {df.loc[index, 'pred_classes']}")
+        print(f"pred_confs: {df.loc[index, 'pred_confs']}")
+        print(f"md_confs: {df.loc[index, 'md_confs']}")
         print(f"score_dict: {score_dict}")
 
 
@@ -376,3 +390,100 @@ def evaluate_performance(y_true, y_pred, labels, average='macro', pos_label=1):
             ),
     }
     return pref_dict
+
+
+def get_binary_confusion_md(dataset, threshold, repo_dir):
+
+    cfg: Final[Dict] = load_json(os.path.join(repo_dir, 'configs/cfg.json'))
+
+    label_dict = {
+        k: v
+        for k, v in load_csv(os.path.join(cfg['data_dir'], cfg['label_file']))
+    }
+
+    empty_class_id = load_json(
+        os.path.join(cfg['data_dir'], 'label_map.json')
+    ).get('empty')
+
+    true_empty = set(
+        [k for k, v in label_dict.items() if v == str(empty_class_id)]
+    )
+    true_nonempty = set(label_dict.keys()) - set(true_empty)
+
+    # Get imgs that MD classifies as empty
+    keys_empty_bbox, keys_nonempty_bbox = separate_empties(
+        os.path.join(cfg['data_dir'], cfg['detector_file']), float(threshold)
+    )
+    keys_empty_bbox = list(
+        set(keys_empty_bbox).intersection(set(dataset.keys))
+    )
+    keys_nonempty_bbox = list(
+        set(keys_nonempty_bbox).intersection(set(dataset.keys))
+    )
+    keys_empty_img = list(
+        set([map_bbox_to_img(k) for k in keys_empty_bbox])
+    )
+    keys_nonempty_img = list(
+        set([map_bbox_to_img(k) for k in keys_nonempty_bbox])
+    )
+    # Compute confusion metrics for MD stand-alone
+    tn = len(true_empty.intersection(set(keys_empty_img)))
+    tp = len(true_nonempty.intersection(set(keys_nonempty_img)))
+    fn = len(true_nonempty.intersection(set(keys_empty_img)))
+    fp = len(true_empty.intersection(set(keys_nonempty_img)))
+
+    conf_md = {
+        'tnr': tn / (tn + fp) if (tn + fp) > 0 else 0.0,
+        'tpr': tp / (tp + fn) if (tp + fn) > 0 else 0.0,
+        'fnr': fn / (tp + fn) if (tp + fn) > 0 else 0.0,
+        'fpr': fp / (tn + fp) if (tn + fp) > 0 else 0.0,
+    }
+    return conf_md
+
+
+def get_binary_confusion_ppl(y_true, y_pred):
+    tp, tn, fp, fn = 0, 0, 0, 0
+    for true, pred in zip(y_true, y_pred):
+        if true == 'empty':
+            if true == pred:
+                tn += 1
+            else:
+                fp += 1
+        else:
+            if pred == 'empty':
+                fn += 1
+            else:
+                tp += 1
+    conf_ppl = {
+        'tnr': tn / (tn + fp) if (tn + fp) > 0 else 0.0,
+        'tpr': tp / (tp + fn) if (tp + fn) > 0 else 0.0,
+        'fnr': fn / (tp + fn) if (tp + fn) > 0 else 0.0,
+        'fpr': fp / (tn + fp) if (tn + fp) > 0 else 0.0,
+    }
+    return conf_ppl
+
+
+def _escape_latex(s):
+    return (
+        s.replace("\\", "ab2§=§8yz")  # rare string for final conversion
+        .replace("ab2§=§8yz ", "ab2§=§8yz\\space ")  # backslash gobbles spaces
+        .replace("&", "\\&")
+        .replace("%", "\\%")
+        .replace("$", "\\$")
+        .replace("#", "\\#")
+        .replace("_", "\\_")
+        .replace("{", "\\{")
+        .replace("}", "\\}")
+        .replace("~ ", "~\\space ")  # since \textasciitilde gobbles spaces
+        .replace("~", "\\textasciitilde ")
+        .replace("^ ", "^\\space ")  # since \textasciicircum gobbles spaces
+        .replace("^", "\\textasciicircum ")
+        .replace("ab2§=§8yz", "\\textbackslash ")
+    )
+
+
+def prepare_latex(df):
+    old = [c for c in df.columns]
+    new = [_escape_latex(c) for c in df.columns]
+    df_tex = df.rename(columns=dict(zip(old, new)))
+    return df_tex

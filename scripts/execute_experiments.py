@@ -149,20 +149,13 @@ def main(repo_dir: str, experiment: str):
             val_dataset=dataset_is_val
         )
         print('---> Evaluating on test data')
-        results_perf = evaluator_is.evaluate(trainer_perf_is)
+        evaluator_is.evaluate(trainer_perf_is)
         details_perf = evaluator_is.get_details()
-        save_as_json(
-            results_perf,
-            os.path.join(
-                cfg['result_dir'],
-                f'{timestr}_results_insample_perf.json'
-            )
-        )
         save_as_pickle(
             details_perf,
             os.path.join(
                 cfg['result_dir'],
-                f'{timestr}_details_insample_perf.pkl'
+                f'{timestr}_insample_perf.pickle'
             )
         )
 
@@ -170,50 +163,18 @@ def main(repo_dir: str, experiment: str):
 
     elif experiment == 'insample_empty':
 
-        # Get truly empty images
-        true_empty = set([k for k, v in label_dict.items() if v == str(empty_class_id)])
-        true_nonempty = set(label_dict.keys()) - set(true_empty)
-
-        # Compute empty-detection performance of MD stand-alone
-        # and for entire pipeline
-
-        results_empty = {
-            'names': ['ours', 'progressive', 'norouzzadeh'],
-            'thresholds': [cfg['md_conf'], THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
-        }
+        thresholds = [cfg['md_conf'], THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
         details_empty = {}
-        tnr_md, tpr_md, fnr_md, fpr_md = [], [], [], []
-        tnr_ppl, tpr_ppl, fnr_ppl, fpr_ppl = [], [], [], []
 
-        for threshold in results_empty['thresholds']:
+        for threshold in thresholds:
 
             # Get imgs that MD classifies as empty
-            keys_empty_bbox, keys_nonempty_bbox = separate_empties(
+            _, keys_nonempty_bbox = separate_empties(
                 os.path.join(cfg['data_dir'], cfg['detector_file']), float(threshold)
             )
             keys_nonempty_bbox_trainval = list(
                 set(keys_nonempty_bbox).intersection(set(dataset_is_trainval.keys))
             )
-            keys_empty_bbox_test = list(
-                set(keys_empty_bbox).intersection(set(dataset_is_test.keys))
-            )
-            keys_nonempty_bbox_test = list(
-                set(keys_nonempty_bbox).intersection(set(dataset_is_test.keys))
-            )
-            keys_empty_img_test = list(
-                set([map_bbox_to_img(k) for k in keys_empty_bbox_test]))
-            keys_nonempty_img_test = list(
-                set([map_bbox_to_img(k) for k in keys_nonempty_bbox_test])
-            )
-            # Compute confusion metrics for MD stand-alone
-            tn_md = len(true_empty.intersection(set(keys_empty_img_test)))
-            tp_md = len(true_nonempty.intersection(set(keys_nonempty_img_test)))
-            fn_md = len(true_nonempty.intersection(set(keys_empty_img_test)))
-            fp_md = len(true_empty.intersection(set(keys_nonempty_img_test)))
-            tnr_md.append(tn_md / (tn_md + fp_md) if (tn_md + fp_md) > 0 else 0.)
-            tpr_md.append(tp_md / (tp_md + fn_md) if (tp_md + fn_md) > 0 else 0.)
-            fnr_md.append(fn_md / (tp_md + fn_md) if (tp_md + fn_md) > 0 else 0.)
-            fpr_md.append(fp_md / (tn_md + fp_md) if (tn_md + fp_md) > 0 else 0.)
 
             # Prepare new train and val data according to threshold
 
@@ -258,38 +219,14 @@ def main(repo_dir: str, experiment: str):
                 empty_class_id=empty_class_id,
                 conf_threshold=float(threshold),
             )
-            conf_ppl = evaluator.evaluate(trainer_empty).get('conf_empty')
-            tnr_ppl.append(conf_ppl.get('tnr'))
-            tpr_ppl.append(conf_ppl.get('tpr'))
-            fnr_ppl.append(conf_ppl.get('fnr'))
-            fpr_ppl.append(conf_ppl.get('fpr'))
+            evaluator.evaluate(trainer_empty)
             details_empty[threshold] = evaluator.get_details()
 
-        results_empty.update(
-            {
-                'tnr_md': [format(x, '.4f') for x in tnr_md],
-                'tpr_md': [format(x, '.4f') for x in tpr_md],
-                'fnr_md': [format(x, '.4f') for x in fnr_md],
-                'fpr_md': [format(x, '.4f') for x in fpr_md],
-                'tnr_ppl': [format(x, '.4f') for x in tnr_ppl],
-                'tpr_ppl': [format(x, '.4f') for x in tpr_ppl],
-                'fnr_ppl': [format(x, '.4f') for x in fnr_ppl],
-                'fpr_ppl': [format(x, '.4f') for x in fpr_ppl],
-            }
-        )
-
-        save_as_json(
-            results_empty,
-            os.path.join(
-                cfg['result_dir'],
-                f'{timestr}_results_insample_empty.json'
-            )
-        )
         save_as_pickle(
             details_empty,
             os.path.join(
                 cfg['result_dir'],
-                f'{timestr}_details_insample_empty.pkl'
+                f'{timestr}_insample_empty.pickle'
             )
         )
 
@@ -308,20 +245,14 @@ def main(repo_dir: str, experiment: str):
             val_dataset=dataset_is_val
         )
         print('---> Evaluating on out-of-sample data')
-        results_perf_passive = evaluator_oos.evaluate(trainer_perf_oos)
+        evaluator_oos.evaluate(trainer_perf_oos)
         details_perf_passive = evaluator_oos.get_details()
-        save_as_json(
-            results_perf_passive,
-            os.path.join(
-                cfg['result_dir'],
-                f'{timestr}_results_oosample_perf.json'
-            )
-        )
+
         save_as_pickle(
             details_perf_passive,
             os.path.join(
                 cfg['result_dir'],
-                f'{timestr}_details_oosample_perf.pkl'
+                f'{timestr}_oosample_perf.pickle'
             )
         )
 
