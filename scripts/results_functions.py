@@ -160,22 +160,26 @@ def inspect_results(
     which_preds='only_false',
 ):
     # sorting can be: ['descending', 'ascending', 'random']
-    # which_preds can be: ['only_true', 'only_false', 'mixed']
+    # which_preds can be: ['only_true', 'only_false', 'mixed', 'IMAGE_NAME.JPG']
+
     if n_displays == 0:
         print('Please increase the number of displaying images (n_displays).')
         return
-
+    specific_image = False
     if which_preds == 'only_true':
         df = df_pred[df_pred['true_class'] == df_pred['pred_class']]
     elif which_preds == 'only_false':
         df = df_pred[df_pred['true_class'] != df_pred['pred_class']]
     elif which_preds == 'mixed':
         df = df_pred
-
-    if is_truth:
-        df = df[df['true_class'] == test_label]
     else:
-        df = df[df['pred_class'] == test_label]
+        specific_image = True
+        df = df_pred[df_pred['img_name'] == which_preds]
+    if not specific_image:
+        if is_truth:
+            df = df[df['true_class'] == test_label]
+        else:
+            df = df[df['pred_class'] == test_label]
     df = df.sort_values(
         by=['pred_score'], ascending=False, ignore_index=True,
     )
