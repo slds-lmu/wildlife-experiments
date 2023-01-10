@@ -21,7 +21,7 @@
     "finetune_epochs": 10,
     "finetune_layers": 2,
     "transfer_learning_rate": 7.74263682681128e-05,
-    "finetune_learning_rate": 0.001082636733874,
+    "finetune_learning_rate": 1.2689610031679e-05,
     "model_backbone": "xception",
     "num_workers": 16,
     "eval_metrics": [
