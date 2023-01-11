@@ -85,6 +85,7 @@ def main(repo_dir: str, experiment: str):
     dataset_oos_test = load_pickle(os.path.join(
         cfg['data_dir'], 'dataset_oos_test.pkl')
     )
+    breakpoint()
 
     transfer_callbacks = [
         EarlyStopping(
