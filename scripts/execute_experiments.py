@@ -310,7 +310,7 @@ def main(repo_dir: str, experiment: str):
 
         for args, mode in zip(
                 # [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
-                [trainer_args_pretraining], ['warmstart']
+                [trainer_args], ['coldstart']
         ):
 
             args['num_workers'] = 1  # avoid file overload due to TF multi-processing
