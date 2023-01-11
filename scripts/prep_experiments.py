@@ -112,6 +112,7 @@ def main(repo_dir: str):
         meta_dict=stations_dict,
         random_state=cfg['random_state']
     )
+    breakpoint()
 
     # Map keys to bbxox level
     keys_is_train = flatten_list([dataset.mapping_dict[k] for k in keys_is_train])
