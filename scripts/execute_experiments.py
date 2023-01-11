@@ -264,27 +264,27 @@ def main(repo_dir: str, experiment: str):
         print('---> Training on out-of-sample data')
         trainer_al_optimal = WildlifeTrainer(**trainer_args)
         tf.random.set_seed(cfg['random_state'])
-        # trainer_al_optimal.fit(
-            # train_dataset=dataset_oos_train, val_dataset=dataset_oos_val
-        # )
+        trainer_al_optimal.fit(
+            train_dataset=dataset_oos_train, val_dataset=dataset_oos_val
+        )
         print('---> Evaluating on out-of-sample data')
-        # _ = evaluator_oos.evaluate(trainer_al_optimal)
-        # details_al_optimal = evaluator_oos.get_details()
-        # save_as_pickle(
-            # details_al_optimal,
-            # os.path.join(
-                # cfg['result_dir'],
-                # f'{timestr}_results_oosample_active_optimal.json'
-            # )
-        # )
+        _ = evaluator_oos.evaluate(trainer_al_optimal)
+        details_al_optimal = evaluator_oos.get_details()
+        save_as_pickle(
+            details_al_optimal,
+            os.path.join(
+                cfg['result_dir'],
+                f'{timestr}_results_oosample_active_optimal.json'
+            )
+        )
 
         # Pre-train for warm start
         trainer_pretraining = WildlifeTrainer(**trainer_args)
         tf.random.set_seed(cfg['random_state'])
-        # trainer_pretraining.fit(dataset_is_train, dataset_is_val)
-        # trainer_pretraining.save_model(
-            # os.path.join(cfg['data_dir'], cfg['pretraining_ckpt'])
-        # )
+        trainer_pretraining.fit(dataset_is_train, dataset_is_val)
+        trainer_pretraining.save_model(
+            os.path.join(cfg['data_dir'], cfg['pretraining_ckpt'])
+        )
 
         trainer_args_pretraining = dict(
             {
@@ -310,7 +310,7 @@ def main(repo_dir: str, experiment: str):
 
         for args, mode in zip(
                 # [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
-                [trainer_args], ['coldstart']
+                [trainer_args_pretraining], ['warmstart']
         ):
 
             args['num_workers'] = 1  # avoid file overload due to TF multi-processing
