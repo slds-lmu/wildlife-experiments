@@ -13,5 +13,5 @@ else
     export CUDA_VISIBLE_DEVICES=$GPUNAME
 fi
 
-python scripts/execute_experiments.py \
+python scripts/execute_tuning.py \
 --repo_dir=$PERSONALFOLDER/wildlife-experiments/
