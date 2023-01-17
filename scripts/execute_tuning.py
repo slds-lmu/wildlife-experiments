@@ -100,6 +100,7 @@ def main(repo_dir: str):
         dataset_is_train = subset_dataset(dataset_is_train, keys_is_train)
         dataset_is_val = subset_dataset(dataset_is_val, keys_is_val)
 
+        # TODO fix with correct number of layers
         # Determine number of finetuning layers
         model = ModelFactory.get(
             model_id=candidate['model_backbone'], num_classes=cfg['num_classes']
@@ -111,7 +112,6 @@ def main(repo_dir: str):
             finetune_layers = n_layers_featext // 2
         else:
             finetune_layers = n_layers_featext
-        breakpoint()
 
         # Define trainer args
         trainer_args: Dict = {
