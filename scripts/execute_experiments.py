@@ -1,4 +1,5 @@
 """In-sample results."""
+import itertools
 import random
 import time
 import click
@@ -29,6 +30,8 @@ from wildlifeml.utils.io import (
 )
 from wildlifeml.utils.misc import flatten_list
 from tensorflow.keras.callbacks import EarlyStopping
+
+from utils import product_dict
 
 timestr = time.strftime("%Y%m%d%H%M")
 
@@ -133,6 +136,18 @@ def main(repo_dir: str, experiment: str):
         num_classes=cfg['num_classes'],
         empty_class_id=empty_class_id,
     )
+
+    # ----------------------------------------------------------------------------------
+    # TUNING ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------
+
+    search_grid: Dict = {
+        'architectures': ['xception', 'densenet121', 'inceptionresnetv2'],
+        'finetune_layers': ['last', 'half', 'all'],
+        'md_threshold': [0.1, 0.5, 0.9]
+    }
+    list(product_dict(**search_grid))
+    breakpoint()
 
     # ----------------------------------------------------------------------------------
     # IN-SAMPLE ------------------------------------------------------------------------
