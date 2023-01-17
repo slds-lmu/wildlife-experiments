@@ -130,7 +130,7 @@ def main(repo_dir: str):
     )
 
     # Restructure station dict to match stratified-splitting arguments
-    station_dict = {k: {'station': v} for k, v in station_dict}
+    station_dict = {k: {'station': v} for k, v in station_dict.items()}
     # Define in-sample & out-of-sample keys according to camera stations
     keys_is = [k for k in all_keys if station_dict[k]['station'] in STATIONS_IS]
     keys_oos = [k for k in all_keys if station_dict[k]['station'] in STATIONS_OOS]
