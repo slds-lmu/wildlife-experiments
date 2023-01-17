@@ -1,4 +1,5 @@
 """Tuning with grid search."""
+import math
 import os
 from typing import Final, Dict
 import click
@@ -103,6 +104,13 @@ def main(repo_dir: str):
         model = ModelFactory.get(
             model_id=candidate['model_backbone'], num_classes=cfg['num_classes']
         )
+        n_layers_featext = len(model.layers) - 1
+        if candidate['finetune_layers'] == 'last':
+            finetune_layers = 1
+        elif candidate['finetune_layers'] == 'half':
+            finetune_layers = n_layers_featext // 2
+        else:
+            finetune_layers = n_layers_featext
         breakpoint()
 
         # Define trainer args
@@ -114,7 +122,7 @@ def main(repo_dir: str):
             'finetune_epochs': cfg['finetune_epochs'],
             'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
             'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
-            'finetune_layers': candidate['finetune_layers'],
+            'finetune_layers': finetune_layers,
             'model_backbone': candidate['model_backbone'],
             'transfer_callbacks': transfer_callbacks,
             'finetune_callbacks': finetune_callbacks,
