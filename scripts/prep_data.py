@@ -129,9 +129,11 @@ def main(repo_dir: str):
         augmentation=augmentation,
     )
 
+    # Restructure station dict to match stratified-splitting arguments
+    station_dict = {k: {'station': v} for k, v in station_dict}
     # Define in-sample & out-of-sample keys according to camera stations
-    keys_is = [k for k in all_keys if station_dict[k] in STATIONS_IS]
-    keys_oos = [k for k in all_keys if station_dict[k] in STATIONS_OOS]
+    keys_is = [k for k in all_keys if station_dict[k]['station'] in STATIONS_IS]
+    keys_oos = [k for k in all_keys if station_dict[k]['station'] in STATIONS_OOS]
 
     # Split keys into train/val/test
     keys_is_train, keys_is_val, keys_is_test = do_stratified_splitting(
