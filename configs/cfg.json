@@ -2,7 +2,7 @@
     "root_dir": "/common/bothmannl/",
     "img_dir": "wildlife_images/usecase2/original_images/",
     "data_dir": "/home/wimmerl/projects/wildlife-experiments/data/",
-    "result_dir": "/home/wimmerl/projectse/wildlife-experiments/results/",
+    "result_dir": "/home/wimmerl/projects/wildlife-experiments/results/",
     "label_file": "labels.csv",
     "detector_file": "images_megadetector.json",
     "mapping_file": "bbox_map.json",
@@ -18,11 +18,12 @@
     "batch_size": 32,
     "num_classes": 8,
     "transfer_epochs": 200,
-    "finetune_epochs": 10,
-    "finetune_layers": 1,
-    "transfer_learning_rate": 0.0001,
-    "finetune_learning_rate": 0.005,
-    "model_backbone": "xception",
+    "finetune_epochs": 200,
+    "transfer_learning_rate": 0.001,
+    "finetune_learning_rate": 0.001,
+    "transfer_patience": 3,
+    "finetune_patience": 3,
+    "earlystop_metric": "val_loss",
     "num_workers": 16,
     "eval_metrics": [
         "accuracy"
@@ -31,8 +32,5 @@
     "active_dir": "/home/wimmerl/projects/wildlife-experiments/active/",
     "al_batchsize": 32,
     "al_iterations": -1,
-    "pretraining_ckpt": "pretrained_weights",
-    "earlystop_metric": "val_loss",
-    "transfer_patience": 3,
-    "finetune_patience": 3
+    "pretraining_ckpt": "pretrained_weights"
 }
