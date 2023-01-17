@@ -64,6 +64,7 @@ def main(repo_dir: str, experiment: str):
     }
 
     # Prepare training
+    # TODO remove empties from train/val data according to threshold from tuning
     dataset_is_train = load_pickle(
         os.path.join(cfg['data_dir'], 'dataset_is_train.pkl')
     )
@@ -136,18 +137,6 @@ def main(repo_dir: str, experiment: str):
         num_classes=cfg['num_classes'],
         empty_class_id=empty_class_id,
     )
-
-    # ----------------------------------------------------------------------------------
-    # TUNING ---------------------------------------------------------------------------
-    # ----------------------------------------------------------------------------------
-
-    search_grid: Dict = {
-        'architectures': ['xception', 'densenet121', 'inceptionresnetv2'],
-        'finetune_layers': ['last', 'half', 'all'],
-        'md_threshold': [0.1, 0.5, 0.9]
-    }
-    list(product_dict(**search_grid))
-    breakpoint()
 
     # ----------------------------------------------------------------------------------
     # IN-SAMPLE ------------------------------------------------------------------------
