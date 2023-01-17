@@ -150,21 +150,25 @@ def main(repo_dir: str):
     )
 
     # Map keys to bbxox level
-    keys_list: List = [
-        keys_is_train,
-        keys_is_val,
-        keys_is_test,
-        keys_oos_train,
-        keys_oos_val,
-        keys_oos_test,
-    ]
-    keys_list = [
-        flatten_list([dataset.mapping_dict[k] for k in kl]) for kl in keys_list
-    ]
+    keys_is_train = flatten_list([dataset.mapping_dict[k] for k in keys_is_train])
+    keys_is_val = flatten_list([dataset.mapping_dict[k] for k in keys_is_val])
+    keys_is_test = flatten_list([dataset.mapping_dict[k] for k in keys_is_test])
+    keys_oos_train = flatten_list([dataset.mapping_dict[k] for k in keys_oos_train])
+    keys_oos_val = flatten_list([dataset.mapping_dict[k] for k in keys_oos_val])
+    keys_oos_test = flatten_list([dataset.mapping_dict[k] for k in keys_oos_test])
 
     # Create data subsets from different lists of keys
     for keyset, mode in zip(
-            keys_list,
+            [
+                keys_is_train,
+                keys_is_val,
+                keys_is_train + keys_is_val,
+                keys_is_test,
+                keys_oos_train,
+                keys_oos_val,
+                keys_oos_train + keys_oos_val,
+                keys_oos_test,
+            ],
             [
                 'is_train',
                 'is_val',
