@@ -134,3 +134,6 @@ def main(repo_dir: str):
             best_f1 = result.get('f1')
             best_config.update(candidate)
 
+
+if __name__ == '__main__':
+    main()
