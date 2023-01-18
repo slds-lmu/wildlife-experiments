@@ -7,7 +7,7 @@ import click
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from wildlifeml.data import subset_dataset
 from wildlifeml.training.evaluator import Evaluator
 from wildlifeml.training.models import ModelFactory
@@ -47,13 +47,23 @@ def main(repo_dir: str):
     transfer_callbacks = [
         EarlyStopping(
             monitor=cfg['earlystop_metric'],
+            patience=2 * cfg['transfer_patience'],
+        ),
+        ReduceLROnPlateau(
+            monitor=cfg['earlystop_metric'],
             patience=cfg['transfer_patience'],
+            factor=0.1,
         )
     ]
     finetune_callbacks = [
         EarlyStopping(
             monitor=cfg['earlystop_metric'],
+            patience=2 * cfg['finetune_patience'],
+        ),
+        ReduceLROnPlateau(
+            monitor=cfg['earlystop_metric'],
             patience=cfg['finetune_patience'],
+            factor=0.1,
         )
     ]
 
