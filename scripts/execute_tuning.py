@@ -146,7 +146,8 @@ def main(repo_dir: str):
         tuning_archive.update({f'iteration_{idx}': result})
         if result.get('f1') > best_f1:
             best_f1 = result.get('f1')
-            best_config.update(candidate.update({'f1': best_f1}))
+            candidate.update({'f1': best_f1})
+            best_config.update(candidate)
         save_as_json(
             tuning_archive,
             os.path.join(cfg['result_dir'], f'{TIMESTR}_results_tuning_archive.json')
@@ -155,7 +156,6 @@ def main(repo_dir: str):
             best_config,
             os.path.join(cfg['result_dir'], f'{TIMESTR}_results_tuning_best.json')
         )
-        exit()
 
 
 if __name__ == '__main__':
