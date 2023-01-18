@@ -74,7 +74,7 @@ def main(repo_dir: str):
     # Define search grid
     search_space: Dict = {
         'model_backbone': ['xception', 'densenet121', 'inceptionresnetv2'],
-        'finetune_layers': ['last', 'half', 'all'],
+        'finetune_layers': ['all', 'half', 'last'],
         'md_conf': [0.1, 0.5, 0.9]
     }
     search_grid = list(product_dict(**search_space))
@@ -100,12 +100,11 @@ def main(repo_dir: str):
         dataset_is_train = subset_dataset(dataset_is_train, keys_is_train)
         dataset_is_val = subset_dataset(dataset_is_val, keys_is_val)
 
-        # TODO fix with correct number of layers
         # Determine number of finetuning layers
         model = ModelFactory.get(
             model_id=candidate['model_backbone'], num_classes=cfg['num_classes']
         )
-        n_layers_featext = len(model.layers) - 1
+        n_layers_featext = len(model.get_layer(candidate['model_backbone']).layers) - 1
         if candidate['finetune_layers'] == 'last':
             finetune_layers = 1
         elif candidate['finetune_layers'] == 'half':
@@ -118,8 +117,8 @@ def main(repo_dir: str):
             'batch_size': cfg['batch_size'],
             'loss_func': keras.losses.SparseCategoricalCrossentropy(),
             'num_classes': cfg['num_classes'],
-            'transfer_epochs': cfg['transfer_epochs'],
-            'finetune_epochs': cfg['finetune_epochs'],
+            'transfer_epochs': 2,  # cfg['transfer_epochs'],
+            'finetune_epochs': 2,  # cfg['finetune_epochs'],
             'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
             'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
             'finetune_layers': finetune_layers,
@@ -141,6 +140,8 @@ def main(repo_dir: str):
         if result.get('f1') > best_f1:
             best_f1 = result.get('f1')
             best_config.update(candidate)
+
+        breakpoint()
 
 
 if __name__ == '__main__':
