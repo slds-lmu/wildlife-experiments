@@ -104,7 +104,7 @@ def main(repo_dir: str):
         model = ModelFactory.get(
             model_id=candidate['model_backbone'], num_classes=cfg['num_classes']
         )
-        n_layers_featext = len(model.get_layer(candidate['model_backbone']).layers) - 1
+        n_layers_featext = len(model.get_layer(candidate['model_backbone']).layers)
         if candidate['finetune_layers'] == 'last':
             finetune_layers = 1
         elif candidate['finetune_layers'] == 'half':
