@@ -37,12 +37,7 @@ def main(repo_dir: str):
     dataset_is_train = load_pickle(
         os.path.join(cfg['data_dir'], 'dataset_is_train.pkl')
     )
-    dataset_is_val = load_pickle(
-        os.path.join(cfg['data_dir'], 'dataset_is_val.pkl')
-    )
-    dataset_is_test = load_pickle(
-        os.path.join(cfg['data_dir'], 'dataset_is_test.pkl')
-    )
+    dataset_is_val = load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_val.pkl'))
     empty_class_id = load_json(
         os.path.join(cfg['data_dir'], 'label_map.json')
     ).get('empty')
@@ -60,15 +55,6 @@ def main(repo_dir: str):
             patience=cfg['finetune_patience'],
         )
     ]
-
-    # Define evaluator
-    evaluator = Evaluator(
-        label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
-        detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
-        dataset=dataset_is_test,
-        num_classes=cfg['num_classes'],
-        empty_class_id=empty_class_id,
-    )
 
     # ----------------------------------------------------------------------------------
     # TUNING ---------------------------------------------------------------------------
@@ -101,7 +87,7 @@ def main(repo_dir: str):
             set(dataset_is_val.keys).intersection(set(keys_all_nonempty))
         )
         dataset_is_train = subset_dataset(dataset_is_train, keys_is_train)
-        dataset_is_val = subset_dataset(dataset_is_val, keys_is_val)
+        dataset_is_val_internal = subset_dataset(dataset_is_val, keys_is_val)
 
         # Determine number of finetuning layers
         model = ModelFactory.get(
@@ -132,10 +118,22 @@ def main(repo_dir: str):
             'eval_metrics': cfg['eval_metrics'],
         }
 
+        # Train
         trainer = WildlifeTrainer(**trainer_args)
         print(f'---> Training with configuration {idx}')
         tf.random.set_seed(cfg['random_state'])
-        trainer.fit(dataset_is_train, dataset_is_val)
+        trainer.fit(dataset_is_train, dataset_is_val_internal)
+
+        # Define evaluator (everything below candidate['md_conf'] is treated as filtered
+        # by the MD, the rest is predicted by the trainer)
+        evaluator = Evaluator(
+            label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
+            detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
+            dataset=dataset_is_val,
+            num_classes=cfg['num_classes'],
+            empty_class_id=empty_class_id,
+            conf_threshold=candidate['md_conf']
+        )
         print(f'---> Evaluating for configuration {idx}')
         result = evaluator.evaluate(trainer)
 
