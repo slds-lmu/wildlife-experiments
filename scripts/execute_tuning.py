@@ -87,7 +87,7 @@ def main(repo_dir: str):
             set(dataset_is_val.keys).intersection(set(keys_all_nonempty))
         )
         dataset_is_train = subset_dataset(dataset_is_train, keys_is_train)
-        dataset_is_val_internal = subset_dataset(dataset_is_val, keys_is_val)
+        dataset_is_val_highconf = subset_dataset(dataset_is_val, keys_is_val)
 
         # Determine number of finetuning layers
         model = ModelFactory.get(
@@ -122,7 +122,7 @@ def main(repo_dir: str):
         trainer = WildlifeTrainer(**trainer_args)
         print(f'---> Training with configuration {idx}')
         tf.random.set_seed(cfg['random_state'])
-        trainer.fit(dataset_is_train, dataset_is_val_internal)
+        trainer.fit(dataset_is_train, dataset_is_val_highconf)
 
         # Define evaluator (everything below candidate['md_conf'] is treated as filtered
         # by the MD, the rest is predicted by the trainer)
@@ -146,7 +146,7 @@ def main(repo_dir: str):
             os.path.join(cfg['result_dir'], f'{TIMESTR}_results_tuning_archive.json')
         )
         save_as_json(
-            tuning_archive,
+            best_config,
             os.path.join(cfg['result_dir'], f'{TIMESTR}_results_tuning_best.json')
         )
 
