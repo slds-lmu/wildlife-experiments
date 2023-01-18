@@ -1,4 +1,5 @@
 """Tuning with grid search."""
+import math
 import os
 import time
 from typing import Final, Dict
@@ -63,7 +64,7 @@ def main(repo_dir: str):
     # Define search grid
     search_space: Dict = {
         'model_backbone': ['xception', 'densenet121', 'inceptionresnetv2'],
-        'finetune_layers': ['all', 'half', 'last'],
+        'finetune_layers': [0, 0.25, 0.5],
         'md_conf': [0.1, 0.5, 0.9]
     }
     search_grid = list(product_dict(**search_space))
@@ -94,12 +95,7 @@ def main(repo_dir: str):
             model_id=candidate['model_backbone'], num_classes=cfg['num_classes']
         )
         n_layers_featext = len(model.get_layer(candidate['model_backbone']).layers)
-        if candidate['finetune_layers'] == 'last':
-            finetune_layers = 1
-        elif candidate['finetune_layers'] == 'half':
-            finetune_layers = n_layers_featext // 2
-        else:
-            finetune_layers = n_layers_featext
+        finetune_layers = math.floor(candidate['finetune_layers'] * n_layers_featext)
 
         # Define trainer args
         trainer_args: Dict = {
