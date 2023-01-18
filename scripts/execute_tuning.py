@@ -155,6 +155,7 @@ def main(repo_dir: str):
             best_config,
             os.path.join(cfg['result_dir'], f'{TIMESTR}_results_tuning_best.json')
         )
+        exit()
 
 
 if __name__ == '__main__':
