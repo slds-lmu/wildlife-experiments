@@ -53,6 +53,7 @@ def main(repo_dir: str):
             monitor=cfg['earlystop_metric'],
             patience=cfg['transfer_patience'],
             factor=0.1,
+            verbose=1,
         )
     ]
     finetune_callbacks = [
@@ -64,6 +65,7 @@ def main(repo_dir: str):
             monitor=cfg['earlystop_metric'],
             patience=cfg['finetune_patience'],
             factor=0.1,
+            verbose=1,
         )
     ]
 
