@@ -1,6 +1,6 @@
 """Tuning with grid search."""
-import math
 import os
+import time
 from typing import Final, Dict
 import click
 import tensorflow as tf
@@ -12,9 +12,12 @@ from wildlifeml.training.evaluator import Evaluator
 from wildlifeml.training.models import ModelFactory
 from wildlifeml.training.trainer import WildlifeTrainer
 from wildlifeml.utils.datasets import separate_empties
-from wildlifeml.utils.io import load_json, load_pickle
+from wildlifeml.utils.io import load_json, load_pickle, save_as_json
 
 from utils import product_dict
+
+
+TIMESTR: Final[str] = time.strftime("%Y%m%d%H%M")
 
 
 @click.command()
@@ -117,8 +120,8 @@ def main(repo_dir: str):
             'batch_size': cfg['batch_size'],
             'loss_func': keras.losses.SparseCategoricalCrossentropy(),
             'num_classes': cfg['num_classes'],
-            'transfer_epochs': 1,  # cfg['transfer_epochs'],
-            'finetune_epochs': 2,  # cfg['finetune_epochs'],
+            'transfer_epochs': cfg['transfer_epochs'],
+            'finetune_epochs': cfg['finetune_epochs'],
             'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
             'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
             'finetune_layers': finetune_layers,
@@ -139,9 +142,15 @@ def main(repo_dir: str):
         tuning_archive.update({f'iteration_{idx}': result})
         if result.get('f1') > best_f1:
             best_f1 = result.get('f1')
-            best_config.update(candidate)
-
-        breakpoint()
+            best_config.update(candidate.update({'f1': best_f1}))
+        save_as_json(
+            tuning_archive,
+            os.path.join(cfg['result_dir'], f'{TIMESTR}_results_tuning_archive.json')
+        )
+        save_as_json(
+            tuning_archive,
+            os.path.join(cfg['result_dir'], f'{TIMESTR}_results_tuning_best.json')
+        )
 
 
 if __name__ == '__main__':
