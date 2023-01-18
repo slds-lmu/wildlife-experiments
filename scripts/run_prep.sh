@@ -21,6 +21,4 @@ python scripts/prep_config.py \
 --root_dir=$ROOTDIR \
 --img_dir=$IMGDIR && \
 python scripts/prep_data.py \
---repo_dir=$PERSONALFOLDER/wildlife-experiments/ && \
-python scripts/prep_experiments.py \
 --repo_dir=$PERSONALFOLDER/wildlife-experiments/

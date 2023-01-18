@@ -1,4 +1,5 @@
 """In-sample results."""
+import itertools
 import random
 import time
 import click
@@ -30,7 +31,9 @@ from wildlifeml.utils.io import (
 from wildlifeml.utils.misc import flatten_list
 from tensorflow.keras.callbacks import EarlyStopping
 
-timestr = time.strftime("%Y%m%d%H%M")
+from utils import product_dict
+
+TIMESTR: Final[str] = time.strftime("%Y%m%d%H%M")
 
 THRESH_PROGRESSIVE: Final[float] = 0.5
 THRESH_NOROUZZADEH: Final[float] = 0.9
@@ -61,6 +64,7 @@ def main(repo_dir: str, experiment: str):
     }
 
     # Prepare training
+    # TODO remove empties from train/val data according to threshold from tuning
     dataset_is_train = load_pickle(
         os.path.join(cfg['data_dir'], 'dataset_is_train.pkl')
     )
@@ -155,7 +159,7 @@ def main(repo_dir: str, experiment: str):
             details_perf,
             os.path.join(
                 cfg['result_dir'],
-                f'{timestr}_insample_perf.pickle'
+                f'{TIMESTR}_insample_perf.pickle'
             )
         )
 
@@ -226,7 +230,7 @@ def main(repo_dir: str, experiment: str):
             details_empty,
             os.path.join(
                 cfg['result_dir'],
-                f'{timestr}_insample_empty.pickle'
+                f'{TIMESTR}_insample_empty.pickle'
             )
         )
 
@@ -252,7 +256,7 @@ def main(repo_dir: str, experiment: str):
             details_perf_passive,
             os.path.join(
                 cfg['result_dir'],
-                f'{timestr}_oosample_perf.pickle'
+                f'{TIMESTR}_oosample_perf.pickle'
             )
         )
 
@@ -273,7 +277,7 @@ def main(repo_dir: str, experiment: str):
             results_al_optimal,
             os.path.join(
                 cfg['result_dir'],
-                f'{timestr}_results_oosample_active_optimal.json'
+                f'{TIMESTR}_results_oosample_active_optimal.json'
             )
         )
 
@@ -374,7 +378,7 @@ def main(repo_dir: str, experiment: str):
                 results,
                 os.path.join(
                     cfg['result_dir'],
-                    f'{timestr}_results_oosample_active_{mode}.json'
+                    f'{TIMESTR}_results_oosample_active_{mode}.json'
                 )
             )
     else:
