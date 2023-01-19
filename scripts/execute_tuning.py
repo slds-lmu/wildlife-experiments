@@ -145,6 +145,7 @@ def main(repo_dir: str):
         print(f'---> Evaluating for configuration {idx}')
         result = evaluator.evaluate(trainer)
 
+        result.update(candidate)
         tuning_archive.update({f'iteration_{idx}': result})
         if result.get('f1') > best_f1:
             best_f1 = result.get('f1')
