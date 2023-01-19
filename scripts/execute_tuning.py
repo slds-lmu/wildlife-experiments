@@ -7,7 +7,7 @@ import click
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from wildlifeml.data import subset_dataset
 from wildlifeml.training.evaluator import Evaluator
 from wildlifeml.training.models import ModelFactory
@@ -47,13 +47,25 @@ def main(repo_dir: str):
     transfer_callbacks = [
         EarlyStopping(
             monitor=cfg['earlystop_metric'],
+            patience=2 * cfg['transfer_patience'],
+        ),
+        ReduceLROnPlateau(
+            monitor=cfg['earlystop_metric'],
             patience=cfg['transfer_patience'],
+            factor=0.1,
+            verbose=1,
         )
     ]
     finetune_callbacks = [
         EarlyStopping(
             monitor=cfg['earlystop_metric'],
+            patience=2 * cfg['finetune_patience'],
+        ),
+        ReduceLROnPlateau(
+            monitor=cfg['earlystop_metric'],
             patience=cfg['finetune_patience'],
+            factor=0.1,
+            verbose=1,
         )
     ]
 
@@ -133,10 +145,12 @@ def main(repo_dir: str):
         print(f'---> Evaluating for configuration {idx}')
         result = evaluator.evaluate(trainer)
 
+        result.update(candidate)
         tuning_archive.update({f'iteration_{idx}': result})
         if result.get('f1') > best_f1:
             best_f1 = result.get('f1')
-            best_config.update(candidate.update({'f1': best_f1}))
+            candidate.update({'f1': best_f1})
+            best_config.update(candidate)
         save_as_json(
             tuning_archive,
             os.path.join(cfg['result_dir'], f'{TIMESTR}_results_tuning_archive.json')
