@@ -2,7 +2,8 @@
 import math
 import os
 import time
-from typing import Final, Dict
+import pandas as pd
+from typing import Final, Dict, List
 import click
 import tensorflow as tf
 from tensorflow import keras
@@ -84,7 +85,7 @@ def main(repo_dir: str):
     search_grid = list(product_dict(**search_space))
 
     # Instantiate tuning archive
-    tuning_archive: Dict = {}
+    tuning_archive: List = []
     best_config: Dict = {}
     best_f1 = 0
 
@@ -147,6 +148,7 @@ def main(repo_dir: str):
         print(f'---> Training with configuration {idx}')
         tf.random.set_seed(cfg['random_state'])
         trainer.fit(dataset_is_train, dataset_is_val_highconf)
+        wandb.finish()
 
         # Define evaluator (everything below candidate['md_conf'] is treated as filtered
         # by the MD, the rest is predicted by the trainer)
@@ -161,20 +163,53 @@ def main(repo_dir: str):
         print(f'---> Evaluating for configuration {idx}')
         result = evaluator.evaluate(trainer)
 
+        tuning_archive.append(
+            [
+                idx,
+                this_conf,
+                this_backbone,
+                this_finetune_layers,
+                result['f1'],
+                result['acc'],
+                result['prec'],
+                result['rec'],
+                result['conf_empty']['tnr'],
+                result['conf_empty']['tpr'],
+                result['conf_empty']['fnr'],
+                result['conf_empty']['fpr'],
+            ]
+        )
+        df = pd.DataFrame(
+            tuning_archive,
+            columns=[
+                'iteration',
+                'md_threshold',
+                'backbone',
+                'finetune_layers',
+                'f1',
+                'acc',
+                'prec',
+                'rec',
+                'empty_tnr',
+                'empty_tpr',
+                'empty_fnr',
+                'empty_fpr',
+            ]
+        )
+        df.to_csv(
+            os.path.join(cfg['result_dir'], f'{TIMESTR}_results_tuning_archive.json')
+        )
+
         result.update(candidate)
-        tuning_archive.update({f'iteration_{idx}': result})
         if result.get('f1') > best_f1:
             best_f1 = result.get('f1')
             candidate.update({'f1': best_f1})
             best_config.update(candidate)
         save_as_json(
-            tuning_archive,
-            os.path.join(cfg['result_dir'], f'{TIMESTR}_results_tuning_archive.json')
-        )
-        save_as_json(
             best_config,
             os.path.join(cfg['result_dir'], f'{TIMESTR}_results_tuning_best.json')
         )
+        exit()
 
 
 if __name__ == '__main__':
