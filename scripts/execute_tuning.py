@@ -33,8 +33,6 @@ def main(repo_dir: str):
     # GLOBAL ---------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------
 
-    wandb.init(config={"bs": 12})
-
     cfg: Final[Dict] = load_json(os.path.join(repo_dir, 'configs/cfg.json'))
     os.makedirs(cfg['result_dir'], exist_ok=True)
 
@@ -117,17 +115,15 @@ def main(repo_dir: str):
         )
 
         # Add logging
-        transfer_callbacks.append(
-            WandbCallback(
-                project='wildlilfe',
-                save_code=True,
-                tags=[
-                    f'conf_{this_conf}',
-                    this_backbone,
-                    f'ftlayers_{this_finetune_layers}'
-                ]
-            ),
+        wandb.init(
+            project='wildlilfe',
+            tags=[
+                f'conf_{this_conf}',
+                this_backbone,
+                f'ftlayers_{this_finetune_layers}'
+            ]
         )
+        transfer_callbacks.append(WandbCallback(save_code=True, save_model=False))
 
         # Define trainer args
         trainer_args: Dict = {
