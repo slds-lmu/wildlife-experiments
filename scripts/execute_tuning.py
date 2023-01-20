@@ -1,6 +1,7 @@
 """Tuning with grid search."""
 import math
 import os
+import gc
 import time
 import pandas as pd
 from typing import Final, Dict, List
@@ -166,6 +167,7 @@ def main(repo_dir: str):
         tuning_archive.append(
             [
                 idx,
+                TIMESTR,
                 this_conf,
                 this_backbone,
                 this_finetune_layers,
@@ -183,6 +185,7 @@ def main(repo_dir: str):
             tuning_archive,
             columns=[
                 'iteration',
+                'ts',
                 'md_threshold',
                 'backbone',
                 'finetune_layers',
@@ -196,9 +199,13 @@ def main(repo_dir: str):
                 'empty_fpr',
             ]
         )
-        df.to_csv(
-            os.path.join(cfg['result_dir'], f'{TIMESTR}_results_tuning_archive.json')
-        )
+        archive_file = os.path.join(cfg['result_dir'], 'results_tuning_archive.csv')
+        if os.path.exists(archive_file):
+            existing = pd.read_csv(archive_file)
+            combined = pd.concat([existing, df])
+        else:
+            combined = df
+        combined.to_csv(archive_file)
 
         result.update(candidate)
         if result.get('f1') > best_f1:
@@ -209,7 +216,8 @@ def main(repo_dir: str):
             best_config,
             os.path.join(cfg['result_dir'], f'{TIMESTR}_results_tuning_best.json')
         )
-        exit()
+        tf.keras.backend.clear_session()
+        gc.collect()
 
 
 if __name__ == '__main__':
