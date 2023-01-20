@@ -8,6 +8,8 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+import wandb
+from wandb.keras import WandbCallback
 from wildlifeml.data import subset_dataset
 from wildlifeml.training.evaluator import Evaluator
 from wildlifeml.training.models import ModelFactory
@@ -30,6 +32,8 @@ def main(repo_dir: str):
     # ----------------------------------------------------------------------------------
     # GLOBAL ---------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------
+
+    wandb.init(config={"bs": 12})
 
     cfg: Final[Dict] = load_json(os.path.join(repo_dir, 'configs/cfg.json'))
     os.makedirs(cfg['result_dir'], exist_ok=True)
@@ -54,7 +58,7 @@ def main(repo_dir: str):
             patience=cfg['transfer_patience'],
             factor=0.1,
             verbose=1,
-        )
+        ),
     ]
     finetune_callbacks = [
         EarlyStopping(
@@ -88,10 +92,13 @@ def main(repo_dir: str):
 
     for idx, candidate in enumerate(search_grid):
 
+        this_conf = candidate['md_conf']
+        this_backbone = candidate['model_backbone']
+
         # Remove empty images from train/val keys according to MD threshold
         _, keys_all_nonempty = separate_empties(
             detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
-            conf_threshold=candidate['md_conf']
+            conf_threshold=this_conf
         )
         keys_is_train = list(
             set(dataset_is_train.keys).intersection(set(keys_all_nonempty))
@@ -103,11 +110,24 @@ def main(repo_dir: str):
         dataset_is_val_highconf = subset_dataset(dataset_is_val, keys_is_val)
 
         # Determine number of finetuning layers
-        model = ModelFactory.get(
-            model_id=candidate['model_backbone'], num_classes=cfg['num_classes']
+        model = ModelFactory.get(model_id=this_backbone, num_classes=cfg['num_classes'])
+        n_layers_featext = len(model.get_layer(this_backbone).layers)
+        this_finetune_layers = math.floor(
+            candidate['finetune_layers'] * n_layers_featext
         )
-        n_layers_featext = len(model.get_layer(candidate['model_backbone']).layers)
-        finetune_layers = math.floor(candidate['finetune_layers'] * n_layers_featext)
+
+        # Add logging
+        transfer_callbacks.append(
+            WandbCallback(
+                project='wildlilfe',
+                save_code=True,
+                tags=[
+                    f'conf_{this_conf}',
+                    this_backbone,
+                    f'ftlayers_{this_finetune_layers}'
+                ]
+            ),
+        )
 
         # Define trainer args
         trainer_args: Dict = {
@@ -118,8 +138,8 @@ def main(repo_dir: str):
             'finetune_epochs': cfg['finetune_epochs'],
             'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
             'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
-            'finetune_layers': finetune_layers,
-            'model_backbone': candidate['model_backbone'],
+            'finetune_layers': this_finetune_layers,
+            'model_backbone': this_backbone,
             'transfer_callbacks': transfer_callbacks,
             'finetune_callbacks': finetune_callbacks,
             'num_workers': cfg['num_workers'],
@@ -140,7 +160,7 @@ def main(repo_dir: str):
             dataset=dataset_is_val,
             num_classes=cfg['num_classes'],
             empty_class_id=empty_class_id,
-            conf_threshold=candidate['md_conf']
+            conf_threshold=this_conf
         )
         print(f'---> Evaluating for configuration {idx}')
         result = evaluator.evaluate(trainer)
