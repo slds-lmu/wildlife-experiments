@@ -138,3 +138,4 @@ ray_results/
 data/pretrained*
 active/
 models/
+wandb/
