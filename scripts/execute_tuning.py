@@ -79,8 +79,8 @@ def main(repo_dir: str):
 
     # Define search grid
     search_space: Dict = {
-        'model_backbone': ['xception', 'densenet121', 'inceptionresnetv2'],
-        'finetune_layers': [0, 0.25, 0.5],
+        'model_backbone': ['densenet121'],  # ['xception', 'densenet121', 'inceptionresnetv2'],
+        'finetune_layers': [0.5],  # [0, 0.25, 0.5],
         'md_conf': [0.1, 0.5, 0.9]
     }
     search_grid = list(product_dict(**search_space))
@@ -166,7 +166,6 @@ def main(repo_dir: str):
 
         tuning_archive.append(
             [
-                idx,
                 TIMESTR,
                 this_conf,
                 this_backbone,
@@ -184,7 +183,6 @@ def main(repo_dir: str):
         df = pd.DataFrame(
             tuning_archive,
             columns=[
-                'iteration',
                 'ts',
                 'md_threshold',
                 'backbone',
@@ -202,9 +200,10 @@ def main(repo_dir: str):
         archive_file = os.path.join(cfg['result_dir'], 'results_tuning_archive.csv')
         if os.path.exists(archive_file):
             existing = pd.read_csv(archive_file)
-            combined = pd.concat([existing, df])
+            combined = pd.concat([existing, df], ignore_index=True)
         else:
             combined = df
+        breakpoint()
         combined.to_csv(archive_file)
 
         result.update(candidate)
