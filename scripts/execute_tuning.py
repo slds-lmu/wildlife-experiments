@@ -79,16 +79,14 @@ def main(repo_dir: str):
 
     # Define search grid
     search_space: Dict = {
-        'model_backbone': ['densenet121'],  # ['xception', 'densenet121', 'inceptionresnetv2'],
-        'finetune_layers': [0.5],  # [0, 0.25, 0.5],
+        'model_backbone': ['inceptionresnetv2'],  # ['xception', 'densenet121', 'inceptionresnetv2'],
+        'finetune_layers': [0, 0.25, 0.5],  # [0, 0.25, 0.5],
         'md_conf': [0.1, 0.5, 0.9]
     }
     search_grid = list(product_dict(**search_space))
 
     # Instantiate tuning archive
     tuning_archive: List = []
-    best_config: Dict = {}
-    best_f1 = 0
 
     for idx, candidate in enumerate(search_grid):
 
@@ -203,18 +201,8 @@ def main(repo_dir: str):
             combined = pd.concat([existing, df], ignore_index=True)
         else:
             combined = df
-        breakpoint()
         combined.to_csv(archive_file)
 
-        result.update(candidate)
-        if result.get('f1') > best_f1:
-            best_f1 = result.get('f1')
-            candidate.update({'f1': best_f1})
-            best_config.update(candidate)
-        save_as_json(
-            best_config,
-            os.path.join(cfg['result_dir'], f'{TIMESTR}_results_tuning_best.json')
-        )
         tf.keras.backend.clear_session()
         gc.collect()
 
