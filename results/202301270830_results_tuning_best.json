@@ -1,0 +1,6 @@
+{
+    "model_backbone": "densenet121",
+    "finetune_layers": 0.5,
+    "md_conf": 0.5,
+    "f1": 0.7660127339693146
+}
