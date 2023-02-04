@@ -81,11 +81,7 @@ def main(repo_dir: str):
     search_space: Dict = {
         'model_backbone': ['densenet121'],  # ['xception', 'densenet121', 'inceptionresnetv2'],
         'finetune_layers': [0.5],  # [0, 0.25, 0.5],
-<<<<<<< HEAD
         'md_conf': [0.9]  # [0.1, 0.5, 0.9]
-=======
-        'md_conf': [0.1, 0.5, 0.9]
->>>>>>> 89369e402ba66b3ed789819f13596c28d497b67f
     }
     search_grid = list(product_dict(**search_space))
 
@@ -107,12 +103,6 @@ def main(repo_dir: str):
     ]
 
     for idx, candidate in enumerate(search_grid):
-
-        # Get previous results
-        archive_file = os.path.join(cfg['result_dir'], 'results_tuning_archive.csv')
-        if os.path.exists(archive_file):
-            existing = pd.read_csv(archive_file)
-            breakpoint()
 
         this_conf = candidate['md_conf']
         this_backbone = candidate['model_backbone']
