@@ -79,14 +79,28 @@ def main(repo_dir: str):
 
     # Define search grid
     search_space: Dict = {
-        'model_backbone': ['xception', 'densenet121', 'inceptionresnetv2'],  # ['xception', 'densenet121', 'inceptionresnetv2'],
-        'finetune_layers': [0.05],  # [0, 0.25, 0.5],
-        'md_conf': [0.1, 0.5, 0.9]
+        'model_backbone': ['densenet121'],  # ['xception', 'densenet121', 'inceptionresnetv2'],
+        'finetune_layers': [0.5],  # [0, 0.25, 0.5],
+        'md_conf': [0.9]  # [0.1, 0.5, 0.9]
     }
     search_grid = list(product_dict(**search_space))
 
     # Instantiate tuning archive
     tuning_archive: List = []
+    col_names: Final[List] = [
+        'ts',
+        'md_threshold',
+        'backbone',
+        'finetune_layers',
+        'f1',
+        'acc',
+        'prec',
+        'rec',
+        'empty_tnr',
+        'empty_tpr',
+        'empty_fnr',
+        'empty_fpr',
+    ]
 
     for idx, candidate in enumerate(search_grid):
 
@@ -178,26 +192,10 @@ def main(repo_dir: str):
                 result['conf_empty']['fpr'],
             ]
         )
-        df = pd.DataFrame(
-            tuning_archive,
-            columns=[
-                'ts',
-                'md_threshold',
-                'backbone',
-                'finetune_layers',
-                'f1',
-                'acc',
-                'prec',
-                'rec',
-                'empty_tnr',
-                'empty_tpr',
-                'empty_fnr',
-                'empty_fpr',
-            ]
-        )
+        df = pd.DataFrame(tuning_archive, columns=col_names)
         archive_file = os.path.join(cfg['result_dir'], 'results_tuning_archive.csv')
         if os.path.exists(archive_file):
-            existing = pd.read_csv(archive_file)
+            existing = pd.read_csv(archive_file, usecols=col_names)
             combined = pd.concat([existing, df], ignore_index=True)
         else:
             combined = df
