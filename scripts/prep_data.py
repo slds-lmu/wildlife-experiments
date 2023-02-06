@@ -162,7 +162,6 @@ def main(repo_dir: str):
     keys_oos_train_bb = flatten_list([dataset.mapping_dict[k] for k in keys_oos_train])
     keys_oos_val_bb = flatten_list([dataset.mapping_dict[k] for k in keys_oos_val])
     keys_oos_test_bb = flatten_list([dataset.mapping_dict[k] for k in keys_oos_test])
-    breakpoint()
 
     # Create data subsets from different lists of keys
     for keyset, mode in zip(

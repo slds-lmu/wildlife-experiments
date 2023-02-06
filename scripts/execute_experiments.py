@@ -100,6 +100,7 @@ def main(repo_dir: str, experiment: str):
     keys_is_val = list(
         set(dataset_is_val.keys).intersection(set(keys_all_nonempty))
     )
+    breakpoint()
     dataset_is_train = subset_dataset(dataset_is_train, keys_is_train)
     dataset_is_val = subset_dataset(dataset_is_val, keys_is_val)
 
