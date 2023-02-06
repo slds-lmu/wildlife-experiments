@@ -7,7 +7,13 @@ import albumentations as A
 from wildlifeml.preprocessing.megadetector import MegaDetector
 from wildlifeml.data import BBoxMapper, WildlifeDataset, subset_dataset
 from wildlifeml.utils.datasets import do_stratified_splitting
-from wildlifeml.utils.io import load_csv_dict, save_as_csv, load_json, save_as_json, save_as_pickle
+from wildlifeml.utils.io import (
+    load_csv_dict,
+    save_as_csv,
+    load_json,
+    save_as_json,
+    save_as_pickle
+)
 from wildlifeml.utils.misc import flatten_list
 
 STATIONS_IS: Final[List] = [
@@ -156,6 +162,7 @@ def main(repo_dir: str):
     keys_oos_train = flatten_list([dataset.mapping_dict[k] for k in keys_oos_train])
     keys_oos_val = flatten_list([dataset.mapping_dict[k] for k in keys_oos_val])
     keys_oos_test = flatten_list([dataset.mapping_dict[k] for k in keys_oos_test])
+    breakpoint()
 
     # Create data subsets from different lists of keys
     for keyset, mode in zip(

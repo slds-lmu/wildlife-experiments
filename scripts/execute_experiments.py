@@ -7,6 +7,7 @@ from copy import deepcopy
 import os
 
 import tensorflow as tf
+from keras.callbacks import ReduceLROnPlateau
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 import gc
@@ -31,13 +32,13 @@ from wildlifeml.utils.io import (
 from wildlifeml.utils.misc import flatten_list
 from tensorflow.keras.callbacks import EarlyStopping
 
-from utils import product_dict
 
 TIMESTR: Final[str] = time.strftime("%Y%m%d%H%M")
-
+THRESH_TUNED: Final[float] = 0.1
 THRESH_PROGRESSIVE: Final[float] = 0.5
 THRESH_NOROUZZADEH: Final[float] = 0.9
-
+BACKBONE_TUNED: Final[str] = 'xception'
+FTLAYERS_TUNED: Final[int] = 6
 
 @click.command()
 @click.option(
@@ -64,7 +65,6 @@ def main(repo_dir: str, experiment: str):
     }
 
     # Prepare training
-    # TODO remove empties from train/val data according to threshold from tuning
     dataset_is_train = load_pickle(
         os.path.join(cfg['data_dir'], 'dataset_is_train.pkl')
     )
@@ -89,18 +89,42 @@ def main(repo_dir: str, experiment: str):
     dataset_oos_test = load_pickle(os.path.join(
         cfg['data_dir'], 'dataset_oos_test.pkl')
     )
+    # Remove empty images from train/val keys according to MD threshold
+    _, keys_all_nonempty = separate_empties(
+        detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
+        conf_threshold=THRESH_TUNED
+    )
+    keys_is_train = list(
+        set(dataset_is_train.keys).intersection(set(keys_all_nonempty))
+    )
+    keys_is_val = list(
+        set(dataset_is_val.keys).intersection(set(keys_all_nonempty))
+    )
+    dataset_is_train = subset_dataset(dataset_is_train, keys_is_train)
+    dataset_is_val = subset_dataset(dataset_is_val, keys_is_val)
 
     transfer_callbacks = [
         EarlyStopping(
             monitor=cfg['earlystop_metric'],
+            patience=2 * cfg['transfer_patience'],
+        ),
+        ReduceLROnPlateau(
+            monitor=cfg['earlystop_metric'],
             patience=cfg['transfer_patience'],
-        )
+            factor=0.1,
+            verbose=1,
+        ),
     ]
-
     finetune_callbacks = [
         EarlyStopping(
             monitor=cfg['earlystop_metric'],
+            patience=2 * cfg['finetune_patience'],
+        ),
+        ReduceLROnPlateau(
+            monitor=cfg['earlystop_metric'],
             patience=cfg['finetune_patience'],
+            factor=0.1,
+            verbose=1,
         )
     ]
 
@@ -112,8 +136,8 @@ def main(repo_dir: str, experiment: str):
         'finetune_epochs': cfg['finetune_epochs'],
         'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
         'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
-        'finetune_layers': cfg['finetune_layers'],
-        'model_backbone': cfg['model_backbone'],
+        'finetune_layers': FTLAYERS_TUNED,
+        'model_backbone': BACKBONE_TUNED,
         'transfer_callbacks': transfer_callbacks,
         'finetune_callbacks': finetune_callbacks,
         'num_workers': cfg['num_workers'],
