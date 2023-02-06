@@ -1,13 +1,11 @@
 """In-sample results."""
-import itertools
-import random
+
 import time
 import click
 from copy import deepcopy
 import os
 
 import tensorflow as tf
-from keras.callbacks import ReduceLROnPlateau
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 import gc
@@ -30,7 +28,7 @@ from wildlifeml.utils.io import (
     save_as_pickle,
 )
 from wildlifeml.utils.misc import flatten_list
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 
 TIMESTR: Final[str] = time.strftime("%Y%m%d%H%M")
