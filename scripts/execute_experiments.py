@@ -87,6 +87,7 @@ def main(repo_dir: str, experiment: str):
     dataset_oos_test = load_pickle(os.path.join(
         cfg['data_dir'], 'dataset_oos_test.pkl')
     )
+    
     # Remove empty images from train/val keys according to MD threshold
     _, keys_all_nonempty = separate_empties(
         detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
@@ -98,9 +99,22 @@ def main(repo_dir: str, experiment: str):
     keys_is_val = list(
         set(dataset_is_val.keys).intersection(set(keys_all_nonempty))
     )
-    breakpoint()
+    keys_oos_train = list(
+        set(dataset_oos_train.keys).intersection(set(keys_all_nonempty))
+    )
+    keys_oos_val = list(
+        set(dataset_oos_val.keys).intersection(set(keys_all_nonempty))
+    )
     dataset_is_train = subset_dataset(dataset_is_train, keys_is_train)
     dataset_is_val = subset_dataset(dataset_is_val, keys_is_val)
+    dataset_is_trainval = subset_dataset(
+        dataset_is_trainval, dataset_is_train + keys_is_val
+    )
+    dataset_oos_train = subset_dataset(dataset_oos_train, keys_oos_train)
+    dataset_oos_val = subset_dataset(dataset_oos_val, keys_oos_val)
+    dataset_oos_trainval = subset_dataset(
+        dataset_oos_trainval, dataset_oos_train + keys_oos_val
+    )
 
     transfer_callbacks = [
         EarlyStopping(
