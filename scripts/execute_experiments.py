@@ -146,8 +146,8 @@ def main(repo_dir: str, experiment: str):
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
         'num_classes': cfg['num_classes'],
-        'transfer_epochs': 1,  # cfg['transfer_epochs'],
-        'finetune_epochs': 1,  # cfg['finetune_epochs'],
+        'transfer_epochs': cfg['transfer_epochs'],
+        'finetune_epochs': cfg['finetune_epochs'],
         'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
         'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
         'finetune_layers': FTLAYERS_TUNED,
@@ -160,14 +160,6 @@ def main(repo_dir: str, experiment: str):
     empty_class_id = load_json(
         os.path.join(cfg['data_dir'], 'label_map.json')
     ).get('empty')
-
-    evaluator_is = Evaluator(
-        label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
-        detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
-        dataset=dataset_is_test,
-        num_classes=cfg['num_classes'],
-        empty_class_id=empty_class_id,
-    )
     evaluator_oos = Evaluator(
         label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
         detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
@@ -180,27 +172,6 @@ def main(repo_dir: str, experiment: str):
     # IN-SAMPLE ------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------
 
-    # PERFORMANCE ----------------------------------------------------------------------
-
-    # if experiment == 'insample_perf':
-    #     trainer_perf_is = WildlifeTrainer(**trainer_args)
-    #     print('---> Training on wildlife data')
-    #     tf.random.set_seed(cfg['random_state'])
-    #     trainer_perf_is.fit(
-    #         train_dataset=dataset_is_train,
-    #         val_dataset=dataset_is_val
-    #     )
-    #     print('---> Evaluating on test data')
-    #     evaluator_is.evaluate(trainer_perf_is)
-    #     details_perf = evaluator_is.get_details()
-    #     save_as_pickle(
-    #         details_perf,
-    #         os.path.join(
-    #             cfg['result_dir'],
-    #             f'{TIMESTR}_insample_perf.pickle'
-    #         )
-    #     )
-
     # EMPTY VS NON-EMPTY ---------------------------------------------------------------
 
     if experiment == 'insample_empty':
@@ -209,12 +180,10 @@ def main(repo_dir: str, experiment: str):
         details_empty = {}
 
         for threshold in thresholds:
-
             # Get imgs that MD classifies as empty
             _, keys_nonempty_bbox = separate_empties(
                 os.path.join(cfg['data_dir'], cfg['detector_file']), float(threshold)
             )
-
             # Prepare new train and val data according to threshold
             dataset_thresh = subset_dataset(
                 dataset_is_trainval,
@@ -225,9 +194,6 @@ def main(repo_dir: str, experiment: str):
             share_train = cfg['splits'][0] / (cfg['splits'][0] + cfg['splits'][1])
             share_val = cfg['splits'][1] / (cfg['splits'][0] + cfg['splits'][1])
             imgs_keys = list(set([map_bbox_to_img(k) for k in dataset_thresh.keys]))
-            # meta_thresh = deepcopy(stations_dict)
-            # for k in (set(imgs_keys) - set(meta_thresh)):
-            #     meta_thresh.update({k: {'station': None}})
             keys_train, _, keys_val = do_stratified_splitting(
                 img_keys=imgs_keys,
                 splits=(share_train, 0., share_val),
@@ -242,7 +208,6 @@ def main(repo_dir: str, experiment: str):
                 dataset_thresh,
                 flatten_list([dataset_thresh.mapping_dict[k] for k in keys_val])
             )
-
             # Compute confusion for entire pipeline
             trainer_empty = WildlifeTrainer(**trainer_args)
             print('---> Training on wildlife data')
