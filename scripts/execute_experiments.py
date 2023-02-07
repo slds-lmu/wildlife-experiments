@@ -108,12 +108,12 @@ def main(repo_dir: str, experiment: str):
     dataset_is_train = subset_dataset(dataset_is_train, keys_is_train)
     dataset_is_val = subset_dataset(dataset_is_val, keys_is_val)
     dataset_is_trainval = subset_dataset(
-        dataset_is_trainval, dataset_is_train + keys_is_val
+        dataset_is_trainval, keys_is_train + keys_is_val
     )
     dataset_oos_train = subset_dataset(dataset_oos_train, keys_oos_train)
     dataset_oos_val = subset_dataset(dataset_oos_val, keys_oos_val)
     dataset_oos_trainval = subset_dataset(
-        dataset_oos_trainval, dataset_oos_train + keys_oos_val
+        dataset_oos_trainval, keys_oos_train + keys_oos_val
     )
 
     transfer_callbacks = [
