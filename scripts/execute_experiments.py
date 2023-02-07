@@ -38,6 +38,7 @@ THRESH_NOROUZZADEH: Final[float] = 0.9
 BACKBONE_TUNED: Final[str] = 'xception'
 FTLAYERS_TUNED: Final[int] = 6
 
+
 @click.command()
 @click.option(
     '--repo_dir', '-p', help='Your personal path to this repo.', required=True
@@ -181,28 +182,28 @@ def main(repo_dir: str, experiment: str):
 
     # PERFORMANCE ----------------------------------------------------------------------
 
-    if experiment == 'insample_perf':
-        trainer_perf_is = WildlifeTrainer(**trainer_args)
-        print('---> Training on wildlife data')
-        tf.random.set_seed(cfg['random_state'])
-        trainer_perf_is.fit(
-            train_dataset=dataset_is_train,
-            val_dataset=dataset_is_val
-        )
-        print('---> Evaluating on test data')
-        evaluator_is.evaluate(trainer_perf_is)
-        details_perf = evaluator_is.get_details()
-        save_as_pickle(
-            details_perf,
-            os.path.join(
-                cfg['result_dir'],
-                f'{TIMESTR}_insample_perf.pickle'
-            )
-        )
+    # if experiment == 'insample_perf':
+    #     trainer_perf_is = WildlifeTrainer(**trainer_args)
+    #     print('---> Training on wildlife data')
+    #     tf.random.set_seed(cfg['random_state'])
+    #     trainer_perf_is.fit(
+    #         train_dataset=dataset_is_train,
+    #         val_dataset=dataset_is_val
+    #     )
+    #     print('---> Evaluating on test data')
+    #     evaluator_is.evaluate(trainer_perf_is)
+    #     details_perf = evaluator_is.get_details()
+    #     save_as_pickle(
+    #         details_perf,
+    #         os.path.join(
+    #             cfg['result_dir'],
+    #             f'{TIMESTR}_insample_perf.pickle'
+    #         )
+    #     )
 
     # EMPTY VS NON-EMPTY ---------------------------------------------------------------
 
-    elif experiment == 'insample_empty':
+    if experiment == 'insample_empty':
 
         thresholds = [cfg['md_conf'], THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
         details_empty = {}
@@ -213,26 +214,26 @@ def main(repo_dir: str, experiment: str):
             _, keys_nonempty_bbox = separate_empties(
                 os.path.join(cfg['data_dir'], cfg['detector_file']), float(threshold)
             )
-            keys_nonempty_bbox_trainval = list(
-                set(keys_nonempty_bbox).intersection(set(dataset_is_trainval.keys))
-            )
 
             # Prepare new train and val data according to threshold
-
-            dataset_thresh = subset_dataset(dataset_is_trainval, keys_nonempty_bbox_trainval)
+            dataset_thresh = subset_dataset(
+                dataset_is_trainval,
+                list(
+                    set(keys_nonempty_bbox).intersection(set(dataset_is_trainval.keys))
+                )
+            )
             share_train = cfg['splits'][0] / (cfg['splits'][0] + cfg['splits'][1])
             share_val = cfg['splits'][1] / (cfg['splits'][0] + cfg['splits'][1])
             imgs_keys = list(set([map_bbox_to_img(k) for k in dataset_thresh.keys]))
-            meta_thresh = deepcopy(stations_dict)
-            for k in (set(imgs_keys) - set(meta_thresh)):
-                meta_thresh.update({k: {'station': None}})
+            # meta_thresh = deepcopy(stations_dict)
+            # for k in (set(imgs_keys) - set(meta_thresh)):
+            #     meta_thresh.update({k: {'station': None}})
             keys_train, _, keys_val = do_stratified_splitting(
                 img_keys=imgs_keys,
                 splits=(share_train, 0., share_val),
-                meta_dict=meta_thresh,
+                meta_dict=stations_dict,
                 random_state=cfg['random_state']
             )
-
             dataset_train_thresh = subset_dataset(
                 dataset_thresh,
                 flatten_list([dataset_thresh.mapping_dict[k] for k in keys_train])
@@ -243,7 +244,6 @@ def main(repo_dir: str, experiment: str):
             )
 
             # Compute confusion for entire pipeline
-
             trainer_empty = WildlifeTrainer(**trainer_args)
             print('---> Training on wildlife data')
             tf.random.set_seed(cfg['random_state'])
