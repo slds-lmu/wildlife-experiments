@@ -176,7 +176,7 @@ def main(repo_dir: str, experiment: str):
 
     if experiment == 'insample_empty':
 
-        thresholds = [cfg['md_conf'], THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
+        thresholds = [THRESH_TUNED]  # [THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
         details_empty = {}
 
         for threshold in thresholds:
