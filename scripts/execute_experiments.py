@@ -2,14 +2,13 @@
 
 import time
 import click
-from copy import deepcopy
 import os
 
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 import gc
-from typing import Dict, Final, List
+from typing import Dict, Final, List, Any
 from wildlifeml.data import subset_dataset
 from wildlifeml.training.trainer import WildlifeTrainer
 from wildlifeml.training.active import ActiveLearner
@@ -63,13 +62,7 @@ def main(repo_dir: str, experiment: str):
         for k, v in load_csv(os.path.join(cfg['data_dir'], 'stations.csv'))
     }
 
-    # Prepare training
-    dataset_is_train = load_pickle(
-        os.path.join(cfg['data_dir'], 'dataset_is_train.pkl')
-    )
-    dataset_is_val = load_pickle(
-        os.path.join(cfg['data_dir'], 'dataset_is_val.pkl')
-    )
+    # Get data
     dataset_is_trainval = load_pickle(os.path.join(
         cfg['data_dir'], 'dataset_is_trainval.pkl')
     )
@@ -88,35 +81,11 @@ def main(repo_dir: str, experiment: str):
     dataset_oos_test = load_pickle(os.path.join(
         cfg['data_dir'], 'dataset_oos_test.pkl')
     )
-    
-    # Remove empty images from train/val keys according to MD threshold
-    # _, keys_all_nonempty = separate_empties(
-    #     detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
-    #     conf_threshold=THRESH_TUNED
-    # )
-    # keys_is_train = list(
-    #     set(dataset_is_train.keys).intersection(set(keys_all_nonempty))
-    # )
-    # keys_is_val = list(
-    #     set(dataset_is_val.keys).intersection(set(keys_all_nonempty))
-    # )
-    # keys_oos_train = list(
-    #     set(dataset_oos_train.keys).intersection(set(keys_all_nonempty))
-    # )
-    # keys_oos_val = list(
-    #     set(dataset_oos_val.keys).intersection(set(keys_all_nonempty))
-    # )
-    # dataset_is_train = subset_dataset(dataset_is_train, keys_is_train)
-    # dataset_is_val = subset_dataset(dataset_is_val, keys_is_val)
-    # dataset_is_trainval = subset_dataset(
-    #     dataset_is_trainval, keys_is_train + keys_is_val
-    # )
-    # dataset_oos_train = subset_dataset(dataset_oos_train, keys_oos_train)
-    # dataset_oos_val = subset_dataset(dataset_oos_val, keys_oos_val)
-    # dataset_oos_trainval = subset_dataset(
-    #     dataset_oos_trainval, keys_oos_train + keys_oos_val
-    # )
+    empty_class_id = load_json(
+        os.path.join(cfg['data_dir'], 'label_map.json')
+    ).get('empty')
 
+    # Prepare training
     transfer_callbacks = [
         EarlyStopping(
             monitor=cfg['earlystop_metric'],
@@ -141,7 +110,6 @@ def main(repo_dir: str, experiment: str):
             verbose=1,
         )
     ]
-
     trainer_args: Dict = {
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
@@ -157,16 +125,12 @@ def main(repo_dir: str, experiment: str):
         'num_workers': cfg['num_workers'],
         'eval_metrics': cfg['eval_metrics'],
     }
-    empty_class_id = load_json(
-        os.path.join(cfg['data_dir'], 'label_map.json')
-    ).get('empty')
-    evaluator_oos = Evaluator(
-        label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
-        detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
-        dataset=dataset_oos_test,
-        num_classes=cfg['num_classes'],
-        empty_class_id=empty_class_id,
-    )
+    evaluator_args: Dict = {
+        'label_file_path': os.path.join(cfg['data_dir'], cfg['label_file']),
+        'detector_file_path': os.path.join(cfg['data_dir'], cfg['detector_file']),
+        'num_classes': cfg['num_classes'],
+        'empty_class_id': empty_class_id,
+    }
 
     # ----------------------------------------------------------------------------------
     # PASSIVE LEARNING -----------------------------------------------------------------
@@ -175,12 +139,6 @@ def main(repo_dir: str, experiment: str):
     if experiment == 'passive':
 
         thresholds = [THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
-        evaluator_args: Dict = {
-            'label_file_path': os.path.join(cfg['data_dir'], cfg['label_file']),
-            'detector_file_path': os.path.join(cfg['data_dir'], cfg['detector_file']),
-            'num_classes': cfg['num_classes'],
-            'empty_class_id': empty_class_id,
-        }
         details_ins: Dict = {}
 
         for threshold in thresholds:
@@ -213,6 +171,16 @@ def main(repo_dir: str, experiment: str):
                 dataset_thresh,
                 flatten_list([dataset_thresh.mapping_dict[k] for k in keys_val])
             )
+            # Save train/val with chosen split for pretraining in active learning
+            if threshold == THRESH_TUNED:
+                save_as_pickle(
+                    dataset_train_thresh,
+                    os.path.join(cfg['data_dir'], f'dataset_is_train.pkl')
+                )
+                save_as_pickle(
+                    dataset_val_thresh,
+                    os.path.join(cfg['data_dir'], f'dataset_is_val.pkl')
+                )
             # Compute confusion for entire pipeline
             trainer = WildlifeTrainer(**trainer_args)
             print('---> Training on wildlife data')
@@ -252,6 +220,24 @@ def main(repo_dir: str, experiment: str):
 
     elif experiment == 'active':
 
+        # Prepare OOS data
+        _, keys_all_nonempty = separate_empties(
+            detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
+            conf_threshold=THRESH_TUNED
+        )
+        dataset_oos_train = subset_dataset(
+            dataset_oos_train,
+            list(set(dataset_oos_train.keys).intersection(set(keys_all_nonempty)))
+        )
+        dataset_oos_val = subset_dataset(
+            dataset_oos_val,
+            list(set(dataset_oos_val.keys).intersection(set(keys_all_nonempty)))
+        )
+        dataset_oos_trainval = subset_dataset(
+            dataset_oos_trainval,
+            list(set(dataset_oos_trainval.keys).intersection(set(keys_all_nonempty)))
+        )
+
         # Get perf upper limit by training on all data
         print('---> Training on out-of-sample data')
         trainer_al_optimal = WildlifeTrainer(**trainer_args)
@@ -260,25 +246,32 @@ def main(repo_dir: str, experiment: str):
             train_dataset=dataset_oos_train, val_dataset=dataset_oos_val
         )
         print('---> Evaluating on out-of-sample data')
-        results_al_optimal = evaluator_oos.evaluate(trainer_al_optimal)
+        evaluator_oos = Evaluator(
+            dataset=dataset_oos_test, conf_threshold=THRESH_TUNED, **evaluator_args
+        )
+        evaluator_oos.evaluate(trainer_al_optimal)
+        details_al_optimal = evaluator_oos.get_details()
         save_as_json(
-            results_al_optimal,
-            os.path.join(
-                cfg['result_dir'],
-                f'{TIMESTR}_results_oosample_active_optimal.json'
-            )
+            details_al_optimal,
+            os.path.join(cfg['result_dir'], f'{TIMESTR}_results_active_optimal.json')
         )
 
         # Pre-train for warm start
         trainer_pretraining = WildlifeTrainer(**trainer_args)
-        trainer_pretraining.finetune_callbacks = keras.callbacks.ModelCheckpoint(
-            filepath=os.path.join(cfg['data_dir'], cfg['pretraining_ckpt']),
-            save_weights_only=True,
-        )
+        trainer_pretraining.finetune_callbacks = finetune_callbacks + [
+            keras.callbacks.ModelCheckpoint(
+                filepath=os.path.join(cfg['data_dir'], cfg['pretraining_ckpt']),
+                save_weights_only=True,
+            )
+        ]
         tf.random.set_seed(cfg['random_state'])
-        trainer_pretraining.fit(dataset_is_train, dataset_is_val)
+        trainer_pretraining.fit(
+            load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_train.pkl')),
+            load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_val.pkl'))
+        )
 
-        trainer_args_pretraining = dict(
+        trainer_args['num_workers'] = 1  # avoid overload due to TF multi-processing
+        trainer_args_pretraining: Dict = dict(
             {
                 'pretraining_checkpoint': os.path.join(
                     cfg['data_dir'], cfg['pretraining_ckpt']
@@ -287,24 +280,17 @@ def main(repo_dir: str, experiment: str):
             **trainer_args
         )
         # Compute batch sizes
-        num_max_batches = (
-                (len(dataset_oos_trainval.keys) - (5 * 128 + 5 * 256 + 5 * 512)) // 1024
-        )
-        size_last_batch = (
-                len(dataset_oos_trainval.keys) -
-                (5 * 128 + 5 * 256 + 5 * 512 + num_max_batches * 1024)
-        )
-        batch_sizes: Final[List] = (
-                5 * [128] + 5 * [256] + 5 * [512] + num_max_batches * [1024]
-                + [size_last_batch]
-        )
+        n_obs = len(dataset_oos_trainval.keys)
+        init_sizes: Final[List] = [128, 256, 512]
+        init_rep: Final[int] = 5
+        n_max_batches = (n_obs - sum([x * init_rep for x in init_sizes])) // 1024
+        size_last_batch = n_obs - (init_sizes + n_max_batches * 1024)
+        batch_sizes = init_rep * init_sizes + n_max_batches * [1024] + [size_last_batch]
 
         for args, mode in zip(
-                # [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
-                [trainer_args], ['coldstart']
+                [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
+                # [trainer_args], ['coldstart']
         ):
-
-            args['num_workers'] = 1  # avoid file overload due to TF multi-processing
             trainer = WildlifeTrainer(**args)
             active_learner = ActiveLearner(
                 trainer=trainer,
@@ -346,11 +332,8 @@ def main(repo_dir: str, experiment: str):
                         os.path.join(cfg['active_dir'], 'active_labels.csv')
                     )
                 ]
-                labels_supplied = [
-                    (k, v) for k, v in label_dict.items() if k in keys_to_label
-                ]
                 save_as_csv(
-                    labels_supplied,
+                    [(k, v) for k, v in label_dict.items() if k in keys_to_label],
                     os.path.join(cfg['active_dir'], 'active_labels.csv')
                 )
                 print('---> Supplied fresh labeled data')
