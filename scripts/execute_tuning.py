@@ -137,7 +137,7 @@ def main(repo_dir: str):
                 f'ftlayers_{this_finetune_layers}'
             ]
         )
-        transfer_callbacks.append(WandbCallback(save_code=True, save_model=False))
+        # transfer_callbacks.append(WandbCallback(save_code=True, save_model=False))
 
         # Define trainer args
         trainer_args: Dict = {
