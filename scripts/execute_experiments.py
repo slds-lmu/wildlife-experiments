@@ -90,32 +90,32 @@ def main(repo_dir: str, experiment: str):
     )
     
     # Remove empty images from train/val keys according to MD threshold
-    _, keys_all_nonempty = separate_empties(
-        detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
-        conf_threshold=THRESH_TUNED
-    )
-    keys_is_train = list(
-        set(dataset_is_train.keys).intersection(set(keys_all_nonempty))
-    )
-    keys_is_val = list(
-        set(dataset_is_val.keys).intersection(set(keys_all_nonempty))
-    )
-    keys_oos_train = list(
-        set(dataset_oos_train.keys).intersection(set(keys_all_nonempty))
-    )
-    keys_oos_val = list(
-        set(dataset_oos_val.keys).intersection(set(keys_all_nonempty))
-    )
-    dataset_is_train = subset_dataset(dataset_is_train, keys_is_train)
-    dataset_is_val = subset_dataset(dataset_is_val, keys_is_val)
-    dataset_is_trainval = subset_dataset(
-        dataset_is_trainval, keys_is_train + keys_is_val
-    )
-    dataset_oos_train = subset_dataset(dataset_oos_train, keys_oos_train)
-    dataset_oos_val = subset_dataset(dataset_oos_val, keys_oos_val)
-    dataset_oos_trainval = subset_dataset(
-        dataset_oos_trainval, keys_oos_train + keys_oos_val
-    )
+    # _, keys_all_nonempty = separate_empties(
+    #     detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
+    #     conf_threshold=THRESH_TUNED
+    # )
+    # keys_is_train = list(
+    #     set(dataset_is_train.keys).intersection(set(keys_all_nonempty))
+    # )
+    # keys_is_val = list(
+    #     set(dataset_is_val.keys).intersection(set(keys_all_nonempty))
+    # )
+    # keys_oos_train = list(
+    #     set(dataset_oos_train.keys).intersection(set(keys_all_nonempty))
+    # )
+    # keys_oos_val = list(
+    #     set(dataset_oos_val.keys).intersection(set(keys_all_nonempty))
+    # )
+    # dataset_is_train = subset_dataset(dataset_is_train, keys_is_train)
+    # dataset_is_val = subset_dataset(dataset_is_val, keys_is_val)
+    # dataset_is_trainval = subset_dataset(
+    #     dataset_is_trainval, keys_is_train + keys_is_val
+    # )
+    # dataset_oos_train = subset_dataset(dataset_oos_train, keys_oos_train)
+    # dataset_oos_val = subset_dataset(dataset_oos_val, keys_oos_val)
+    # dataset_oos_trainval = subset_dataset(
+    #     dataset_oos_trainval, keys_oos_train + keys_oos_val
+    # )
 
     transfer_callbacks = [
         EarlyStopping(
@@ -146,8 +146,8 @@ def main(repo_dir: str, experiment: str):
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
         'num_classes': cfg['num_classes'],
-        'transfer_epochs': 1,  # cfg['transfer_epochs'],
-        'finetune_epochs': 1,  # cfg['finetune_epochs'],
+        'transfer_epochs': cfg['transfer_epochs'],
+        'finetune_epochs': cfg['finetune_epochs'],
         'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
         'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
         'finetune_layers': FTLAYERS_TUNED,
@@ -176,7 +176,7 @@ def main(repo_dir: str, experiment: str):
 
         thresholds = [THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
         evaluator_args: Dict = {
-            'label_file_path':os.path.join(cfg['data_dir'], cfg['label_file']),
+            'label_file_path': os.path.join(cfg['data_dir'], cfg['label_file']),
             'detector_file_path': os.path.join(cfg['data_dir'], cfg['detector_file']),
             'num_classes': cfg['num_classes'],
             'empty_class_id': empty_class_id,
