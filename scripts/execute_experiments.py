@@ -146,8 +146,8 @@ def main(repo_dir: str, experiment: str):
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
         'num_classes': cfg['num_classes'],
-        'transfer_epochs': cfg['transfer_epochs'],
-        'finetune_epochs': cfg['finetune_epochs'],
+        'transfer_epochs': 1,  # cfg['transfer_epochs'],
+        'finetune_epochs': 1,  # cfg['finetune_epochs'],
         'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
         'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
         'finetune_layers': FTLAYERS_TUNED,
@@ -169,17 +169,22 @@ def main(repo_dir: str, experiment: str):
     )
 
     # ----------------------------------------------------------------------------------
-    # IN-SAMPLE ------------------------------------------------------------------------
+    # PASSIVE LEARNING -----------------------------------------------------------------
     # ----------------------------------------------------------------------------------
 
-    # EMPTY VS NON-EMPTY ---------------------------------------------------------------
-
-    if experiment == 'insample_empty':
+    if experiment == 'passive':
 
         thresholds = [THRESH_TUNED]  # [THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
-        details_empty = {}
+        evaluator_args: Dict = {
+            'label_file_path':os.path.join(cfg['data_dir'], cfg['label_file']),
+            'detector_file_path': os.path.join(cfg['data_dir'], cfg['detector_file']),
+            'num_classes': cfg['num_classes'],
+            'empty_class_id': empty_class_id,
+        }
+        details_ins: Dict = {}
 
         for threshold in thresholds:
+
             # Get imgs that MD classifies as empty
             _, keys_nonempty_bbox = separate_empties(
                 os.path.join(cfg['data_dir'], cfg['detector_file']), float(threshold)
@@ -209,59 +214,43 @@ def main(repo_dir: str, experiment: str):
                 flatten_list([dataset_thresh.mapping_dict[k] for k in keys_val])
             )
             # Compute confusion for entire pipeline
-            trainer_empty = WildlifeTrainer(**trainer_args)
+            trainer = WildlifeTrainer(**trainer_args)
             print('---> Training on wildlife data')
             tf.random.set_seed(cfg['random_state'])
-            trainer_empty.fit(
-                train_dataset=dataset_train_thresh,
-                val_dataset=dataset_val_thresh,
+            trainer.fit(
+                train_dataset=dataset_train_thresh, val_dataset=dataset_val_thresh
             )
-            print('---> Evaluating on test data')
-            evaluator = Evaluator(
-                label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
-                detector_file_path=os.path.join(cfg['data_dir'], cfg['detector_file']),
+            print('---> Evaluating on in-sample test data')
+            evaluator_ins = Evaluator(
                 dataset=dataset_is_test,
-                num_classes=trainer_empty.get_num_classes(),
-                empty_class_id=empty_class_id,
                 conf_threshold=float(threshold),
+                **evaluator_args,
             )
-            evaluator.evaluate(trainer_empty)
-            details_empty[threshold] = evaluator.get_details()
+            evaluator_ins.evaluate(trainer)
+            details_ins[threshold] = evaluator_ins.get_details()
+
+            if threshold == THRESH_TUNED:
+                print('---> Evaluating on out-of-sample test data')
+                evaluator_oos = Evaluator(
+                    dataset=dataset_oos_test,
+                    conf_threshold=float(threshold),
+                    **evaluator_args,
+                )
+                evaluator_oos.evaluate(trainer)
+                details_oos = evaluator_oos.get_details()
+                save_as_pickle(
+                    details_oos,
+                    os.path.join(cfg['result_dir'], f'{TIMESTR}_oosample.pickle')
+                )
 
         save_as_pickle(
-            details_empty,
-            os.path.join(
-                cfg['result_dir'],
-                f'{TIMESTR}_insample_empty.pickle'
-            )
-        )
-
-    # ----------------------------------------------------------------------------------
-    # OUT-OF-SAMPLE --------------------------------------------------------------------
-    # ----------------------------------------------------------------------------------
-
-    # WITHOUT AL -----------------------------------------------------------------------
-
-    elif experiment == 'oosample_perf':
-        print('---> Training on in-sample data')
-        trainer_perf_oos = WildlifeTrainer(**trainer_args)
-        tf.random.set_seed(cfg['random_state'])
-        trainer_perf_oos.fit(train_dataset=dataset_is_train, val_dataset=dataset_is_val)
-        print('---> Evaluating on out-of-sample data')
-        evaluator_oos.evaluate(trainer_perf_oos)
-        details_perf_passive = evaluator_oos.get_details()
-
-        save_as_pickle(
-            details_perf_passive,
-            os.path.join(
-                cfg['result_dir'],
-                f'{TIMESTR}_oosample_perf.pickle'
-            )
+            details_ins,
+            os.path.join(cfg['result_dir'], f'{TIMESTR}_insample.pickle')
         )
 
     # WITH AL (WARM- AND COLDSTART) ----------------------------------------------------
 
-    elif experiment == 'oosample_active':
+    elif experiment == 'active':
 
         # Get perf upper limit by training on all data
         print('---> Training on out-of-sample data')
@@ -377,7 +366,7 @@ def main(repo_dir: str, experiment: str):
                 results,
                 os.path.join(
                     cfg['result_dir'],
-                    f'{TIMESTR}_results_oosample_active_{mode}.json'
+                    f'{TIMESTR}_results_active_{mode}.json'
                 )
             )
     else:
