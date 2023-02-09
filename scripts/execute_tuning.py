@@ -199,6 +199,7 @@ def main(repo_dir: str):
             combined = pd.concat([existing, df], ignore_index=True)
         else:
             combined = df
+        combined = combined.drop_duplicates(subset=list(set(col_names) - {'ts'}))
         combined.to_csv(archive_file)
 
         tf.keras.backend.clear_session()

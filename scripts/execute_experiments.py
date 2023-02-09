@@ -32,11 +32,11 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 
 TIMESTR: Final[str] = time.strftime("%Y%m%d%H%M")
-THRESH_TUNED: Final[float] = 0.1
+THRESH_TUNED: Final[float] = 0.25
 THRESH_PROGRESSIVE: Final[float] = 0.5
 THRESH_NOROUZZADEH: Final[float] = 0.9
 BACKBONE_TUNED: Final[str] = 'xception'
-FTLAYERS_TUNED: Final[int] = 6
+FTLAYERS_TUNED: Final[int] = 33
 
 
 @click.command()
@@ -246,10 +246,7 @@ def main(repo_dir: str, experiment: str):
         print('---> Training on in-sample data')
         trainer_perf_oos = WildlifeTrainer(**trainer_args)
         tf.random.set_seed(cfg['random_state'])
-        trainer_perf_oos.fit(
-            train_dataset=dataset_is_train,
-            val_dataset=dataset_is_val
-        )
+        trainer_perf_oos.fit(train_dataset=dataset_is_train, val_dataset=dataset_is_val)
         print('---> Evaluating on out-of-sample data')
         evaluator_oos.evaluate(trainer_perf_oos)
         details_perf_passive = evaluator_oos.get_details()
