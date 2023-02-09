@@ -174,7 +174,7 @@ def main(repo_dir: str, experiment: str):
 
     if experiment == 'passive':
 
-        thresholds = [THRESH_TUNED]  # [THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
+        thresholds = [THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
         evaluator_args: Dict = {
             'label_file_path':os.path.join(cfg['data_dir'], cfg['label_file']),
             'detector_file_path': os.path.join(cfg['data_dir'], cfg['detector_file']),
