@@ -120,7 +120,7 @@ def main(repo_dir: str, experiment: str):
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
         'num_classes': cfg['num_classes'],
         'transfer_epochs': 1,  # cfg['transfer_epochs'],
-        'finetune_epochs': 1,  # cfg['finetune_epochs'],
+        'finetune_epochs': 0,  # cfg['finetune_epochs'],
         'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
         'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
         'finetune_layers': FTLAYERS_TUNED,
