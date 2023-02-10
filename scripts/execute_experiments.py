@@ -63,14 +63,6 @@ def main(repo_dir: str, experiment: str):
     }
 
     # Get data
-
-    # Map keys to bbxox level
-    # keys_is_train_bb = flatten_list([dataset.mapping_dict[k] for k in keys_is_train])
-    # keys_is_val_bb = flatten_list([dataset.mapping_dict[k] for k in keys_is_train])
-    # keys_is_test_bb = flatten_list([dataset.mapping_dict[k] for k in keys_is_test])
-    # keys_oos_train_bb = flatten_list([dataset.mapping_dict[k] for k in keys_oos_train])
-    # keys_oos_val_bb = flatten_list([dataset.mapping_dict[k] for k in keys_oos_val])
-    # keys_oos_test_bb = flatten_list([dataset.mapping_dict[k] for k in keys_oos_test])
     dataset_is_trainval = load_pickle(os.path.join(
         cfg['data_dir'], 'dataset_is_trainval.pkl')
     )
@@ -171,6 +163,13 @@ def main(repo_dir: str, experiment: str):
                 meta_dict=stations_dict,
                 random_state=cfg['random_state']
             )
+            keys_train2, _, keys_val2 = do_stratified_splitting(
+                img_keys=imgs_keys,
+                splits=(share_train, 0., share_val),
+                meta_dict=stations_dict,
+                random_state=cfg['random_state']
+            )
+            breakpoint()
             dataset_train_thresh = subset_dataset(
                 dataset_thresh,
                 flatten_list([dataset_thresh.mapping_dict[k] for k in keys_train])

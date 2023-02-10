@@ -6,7 +6,7 @@ from typing import Dict, Final, List
 import albumentations as A
 from wildlifeml.preprocessing.megadetector import MegaDetector
 from wildlifeml.data import BBoxMapper, WildlifeDataset, subset_dataset
-from wildlifeml.utils.datasets import do_stratified_splitting, separate_empties
+from wildlifeml.utils.datasets import do_stratified_splitting
 from wildlifeml.utils.io import (
     load_csv_dict,
     save_as_csv,
@@ -57,9 +57,6 @@ STATIONS_OOS: Final[List] = [
     '6034_2For',
     '5728_2Fa'
 ]
-THRESH_TUNED: Final[float] = 0.25
-THRESH_PROGRESSIVE: Final[float] = 0.5
-THRESH_NOROUZZADEH: Final[float] = 0.9
 
 
 @click.command()
@@ -144,10 +141,11 @@ def main(repo_dir: str):
     keys_is = [k for k in all_keys if station_dict[k]['station'] in STATIONS_IS]
     keys_oos = [k for k in all_keys if station_dict[k]['station'] in STATIONS_OOS]
 
-    # Split keys into train/val/test
-    keys_is_train, keys_is_val, keys_is_test = do_stratified_splitting(
+    # Split keys into train/val/test (only two-way for in-sample bc splitting is done
+    # later according to chosen MD threshold)
+    keys_is_trainval, _, keys_is_test = do_stratified_splitting(
         img_keys=keys_is,
-        splits=cfg['splits'],
+        splits=(cfg['splits'][0], 0., cfg['splits'][2]),
         meta_dict=station_dict,
         random_state=cfg['random_state']
     )
@@ -158,39 +156,36 @@ def main(repo_dir: str):
         random_state=cfg['random_state']
     )
 
-    # Get imgs that MD classifies as empty
-    keys_is_train: List = []
-    keys_is_val: List = []
-    for t in [THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]:
-        _, keys_nonempty_bbox = separate_empties(
-            os.path.join(cfg['data_dir'], cfg['detector_file']), float(t)
-        )
-        keys_is_train.append(
-            list(set(keys_nonempty_bbox).intersection(set(keys_is_train)))
-        )
-        keys_is_val.append(
-            list(set(keys_nonempty_bbox).intersection(set(keys_is_val)))
-        )
-        if t == THRESH_TUNED:
-            keys_oos_train = list(
-                set(keys_nonempty_bbox).intersection(set(keys_oos_train))
-            )
-            keys_oos_val = list(
-                set(keys_nonempty_bbox).intersection(set(keys_oos_val))
-            )
+    # Map keys to bbxox level
+    keys_is_trainval_bb = flatten_list(
+        [dataset.mapping_dict[k] for k in keys_is_trainval]
+    )
+    keys_is_test_bb = flatten_list([dataset.mapping_dict[k] for k in keys_is_test])
+    keys_oos_train_bb = flatten_list([dataset.mapping_dict[k] for k in keys_oos_train])
+    keys_oos_val_bb = flatten_list([dataset.mapping_dict[k] for k in keys_oos_val])
+    keys_oos_test_bb = flatten_list([dataset.mapping_dict[k] for k in keys_oos_test])
 
+    # Create data subsets from different lists of keys
     for keyset, mode in zip(
             [
-                keys_is_train,
-                keys_is_val,
-                keys_is_test,
-                keys_oos_train,
-                keys_oos_val,
-                keys_oos_test,
+                keys_is_trainval_bb,
+                keys_is_test_bb,
+                keys_oos_train_bb,
+                keys_oos_val_bb,
+                keys_oos_train_bb + keys_oos_val_bb,
+                keys_oos_test_bb,
             ],
-            ['is_train', 'is_val', 'is_test', 'oos_train', 'oos_val', 'oos_test']
+            [
+                'is_trainval',
+                'is_test',
+                'oos_train',
+                'oos_val',
+                'oos_trainval',
+                'oos_test'
+            ]
     ):
-        save_as_json(keyset, os.path.join(cfg['data_dir'], f'keys_{mode}.json'))
+        subset = subset_dataset(dataset, keyset)
+        save_as_pickle(subset, os.path.join(cfg['data_dir'], f'dataset_{mode}.pkl'))
 
 
 if __name__ == '__main__':
