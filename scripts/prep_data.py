@@ -143,9 +143,9 @@ def main(repo_dir: str):
 
     # Split keys into train/val/test (only two-way for in-sample bc splitting is done
     # later according to chosen MD threshold)
-    keys_is_trainval, _, keys_is_test = do_stratified_splitting(
+    keys_is_train, keys_is_val, keys_is_test = do_stratified_splitting(
         img_keys=keys_is,
-        splits=(cfg['splits'][0], 0., cfg['splits'][2]),
+        splits=cfg['splits'],
         meta_dict=station_dict,
         random_state=cfg['random_state']
     )
@@ -157,9 +157,8 @@ def main(repo_dir: str):
     )
 
     # Map keys to bbxox level
-    keys_is_trainval_bb = flatten_list(
-        [dataset.mapping_dict[k] for k in keys_is_trainval]
-    )
+    keys_is_train_bb = flatten_list([dataset.mapping_dict[k] for k in keys_is_train])
+    keys_is_val_bb = flatten_list([dataset.mapping_dict[k] for k in keys_is_val])
     keys_is_test_bb = flatten_list([dataset.mapping_dict[k] for k in keys_is_test])
     keys_oos_train_bb = flatten_list([dataset.mapping_dict[k] for k in keys_oos_train])
     keys_oos_val_bb = flatten_list([dataset.mapping_dict[k] for k in keys_oos_val])
@@ -168,7 +167,9 @@ def main(repo_dir: str):
     # Create data subsets from different lists of keys
     for keyset, mode in zip(
             [
-                keys_is_trainval_bb,
+                keys_is_train_bb,
+                keys_is_val_bb,
+                keys_is_train_bb + keys_is_val_bb,
                 keys_is_test_bb,
                 keys_oos_train_bb,
                 keys_oos_val_bb,
@@ -176,7 +177,9 @@ def main(repo_dir: str):
                 keys_oos_test_bb,
             ],
             [
-                'is_trainval',
+                'is_train',
+                'is_train',
+                'is_train_val',
                 'is_test',
                 'oos_train',
                 'oos_val',

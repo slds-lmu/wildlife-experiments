@@ -62,6 +62,12 @@ def main(repo_dir: str, experiment: str):
     }
 
     # Get data
+    dataset_is_train = load_pickle(os.path.join(
+        cfg['data_dir'], 'dataset_is_train.pkl')
+    )
+    dataset_is_val = load_pickle(os.path.join(
+        cfg['data_dir'], 'dataset_is_val.pkl')
+    )
     dataset_is_trainval = load_pickle(os.path.join(
         cfg['data_dir'], 'dataset_is_trainval.pkl')
     )
@@ -113,8 +119,8 @@ def main(repo_dir: str, experiment: str):
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
         'num_classes': cfg['num_classes'],
-        'transfer_epochs': cfg['transfer_epochs'],
-        'finetune_epochs': cfg['finetune_epochs'],
+        'transfer_epochs': 1,  # cfg['transfer_epochs'],
+        'finetune_epochs': 1,  # cfg['finetune_epochs'],
         'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
         'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
         'finetune_layers': FTLAYERS_TUNED,
@@ -138,49 +144,35 @@ def main(repo_dir: str, experiment: str):
     if experiment == 'passive':
 
         thresholds = [THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
-        details_ins: Dict = {}
+        details_ins_test: Dict = {}
+        details_ins_val: Dict = {}
 
         for threshold in thresholds:
 
             # Get imgs that MD classifies as empty
-            _, keys_nonempty_bbox = separate_empties(
+            _, keys_all_nonempty = separate_empties(
                 os.path.join(cfg['data_dir'], cfg['detector_file']), float(threshold)
             )
-            breakpoint()
-            # Prepare new train and val data according to threshold
-            dataset_thresh = subset_dataset(
-                dataset_is_trainval,
-                list(
-                    set(keys_nonempty_bbox).intersection(set(dataset_is_trainval.keys))
-                )
+            keys_is_train = list(
+                set(dataset_is_train.keys).intersection(set(keys_all_nonempty))
             )
-            share_train = cfg['splits'][0] / (cfg['splits'][0] + cfg['splits'][1])
-            share_val = cfg['splits'][1] / (cfg['splits'][0] + cfg['splits'][1])
-            imgs_keys = list(set([map_bbox_to_img(k) for k in dataset_thresh.keys]))
-            keys_train, _, keys_val = do_stratified_splitting(
-                img_keys=imgs_keys,
-                splits=(share_train, 0., share_val),
-                meta_dict=stations_dict,
-                random_state=cfg['random_state']
+            keys_is_val = list(
+                set(dataset_is_val.keys).intersection(set(keys_all_nonempty))
             )
-            dataset_train_thresh = subset_dataset(
-                dataset_thresh,
-                flatten_list([dataset_thresh.mapping_dict[k] for k in keys_train])
-            )
-            dataset_val_thresh = subset_dataset(
-                dataset_thresh,
-                flatten_list([dataset_thresh.mapping_dict[k] for k in keys_val])
-            )
+            dataset_train_thresh = subset_dataset(dataset_is_train, keys_is_train)
+            dataset_val_thresh = subset_dataset(dataset_is_val, keys_is_val)
+
             # Save train/val with chosen split for pretraining in active learning
             if threshold == THRESH_TUNED:
                 save_as_pickle(
                     dataset_train_thresh,
-                    os.path.join(cfg['data_dir'], f'dataset_is_train.pkl')
+                    os.path.join(cfg['data_dir'], f'dataset_is_train_thresh.pkl')
                 )
                 save_as_pickle(
                     dataset_val_thresh,
-                    os.path.join(cfg['data_dir'], f'dataset_is_val.pkl')
+                    os.path.join(cfg['data_dir'], f'dataset_is_val_thresh.pkl')
                 )
+
             # Compute confusion for entire pipeline
             trainer = WildlifeTrainer(**trainer_args)
             print('---> Training on wildlife data')
@@ -189,13 +181,21 @@ def main(repo_dir: str, experiment: str):
                 train_dataset=dataset_train_thresh, val_dataset=dataset_val_thresh
             )
             print('---> Evaluating on in-sample test data')
-            evaluator_ins = Evaluator(
+            evaluator_ins_test = Evaluator(
                 dataset=dataset_is_test,
                 conf_threshold=float(threshold),
                 **evaluator_args,
             )
-            evaluator_ins.evaluate(trainer)
-            details_ins[threshold] = evaluator_ins.get_details()
+            evaluator_ins_test.evaluate(trainer)
+            details_ins_test[threshold] = evaluator_ins_test.get_details()
+            print('---> Evaluating on in-sample val data')
+            evaluator_ins_val = Evaluator(
+                dataset=dataset_is_val,
+                conf_threshold=float(threshold),
+                **evaluator_args,
+            )
+            evaluator_ins_val.evaluate(trainer)
+            details_ins_val[threshold] = evaluator_ins_val.get_details()
 
             if threshold == THRESH_TUNED:
                 print('---> Evaluating on out-of-sample test data')
@@ -212,8 +212,12 @@ def main(repo_dir: str, experiment: str):
                 )
 
         save_as_pickle(
-            details_ins,
-            os.path.join(cfg['result_dir'], f'{TIMESTR}_insample.pkl')
+            details_ins_test,
+            os.path.join(cfg['result_dir'], f'{TIMESTR}_insample_test.pkl')
+        )
+        save_as_pickle(
+            details_ins_val,
+            os.path.join(cfg['result_dir'], f'{TIMESTR}_insample_val.pkl')
         )
 
     # WITH AL (WARM- AND COLDSTART) ----------------------------------------------------
@@ -266,8 +270,8 @@ def main(repo_dir: str, experiment: str):
         ]
         tf.random.set_seed(cfg['random_state'])
         trainer_pretraining.fit(
-            load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_train.pkl')),
-            load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_val.pkl'))
+            load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_train_thresh.pkl')),
+            load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_val_thresh.pkl'))
         )
 
         trainer_args['num_workers'] = 1  # avoid overload due to TF multi-processing
