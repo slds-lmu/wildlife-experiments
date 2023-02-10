@@ -163,13 +163,6 @@ def main(repo_dir: str, experiment: str):
                 meta_dict=stations_dict,
                 random_state=cfg['random_state']
             )
-            keys_train2, _, keys_val2 = do_stratified_splitting(
-                img_keys=imgs_keys,
-                splits=(share_train, 0., share_val),
-                meta_dict=stations_dict,
-                random_state=cfg['random_state']
-            )
-            breakpoint()
             dataset_train_thresh = subset_dataset(
                 dataset_thresh,
                 flatten_list([dataset_thresh.mapping_dict[k] for k in keys_train])
@@ -215,12 +208,12 @@ def main(repo_dir: str, experiment: str):
                 details_oos = evaluator_oos.get_details()
                 save_as_pickle(
                     details_oos,
-                    os.path.join(cfg['result_dir'], f'{TIMESTR}_oosample.pickle')
+                    os.path.join(cfg['result_dir'], f'{TIMESTR}_oosample.pkl')
                 )
 
         save_as_pickle(
             details_ins,
-            os.path.join(cfg['result_dir'], f'{TIMESTR}_insample.pickle')
+            os.path.join(cfg['result_dir'], f'{TIMESTR}_insample.pkl')
         )
 
     # WITH AL (WARM- AND COLDSTART) ----------------------------------------------------
@@ -253,14 +246,14 @@ def main(repo_dir: str, experiment: str):
             train_dataset=dataset_oos_train, val_dataset=dataset_oos_val
         )
         print('---> Evaluating on out-of-sample data')
-        evaluator_oos = Evaluator(
+        evaluator_al_optimal = Evaluator(
             dataset=dataset_oos_test, conf_threshold=THRESH_TUNED, **evaluator_args
         )
-        evaluator_oos.evaluate(trainer_al_optimal)
-        details_al_optimal = evaluator_oos.get_details()
-        save_as_json(
+        evaluator_al_optimal.evaluate(trainer_al_optimal)
+        details_al_optimal = evaluator_al_optimal.get_details()
+        save_as_pickle(
             details_al_optimal,
-            os.path.join(cfg['result_dir'], f'{TIMESTR}_results_active_optimal.json')
+            os.path.join(cfg['result_dir'], f'{TIMESTR}_results_active_optimal.pkl')
         )
 
         # Pre-train for warm start
@@ -308,7 +301,7 @@ def main(repo_dir: str, experiment: str):
                 train_size=cfg['splits'][0],
                 test_dataset=dataset_oos_test,
                 test_logfile_path=os.path.join(
-                    cfg['result_dir'], cfg['test_logfile'] + f'_{mode}.json'
+                    cfg['result_dir'], cfg['test_logfile'] + f'_{mode}.pkl'
                 ),
                 acq_logfile_path=os.path.join(
                     cfg['result_dir'], 'acq_logfile_' + f'{mode}.json'
@@ -350,13 +343,13 @@ def main(repo_dir: str, experiment: str):
                 tf.keras.backend.clear_session()
                 gc.collect()
 
-            results = load_json(active_learner.test_logfile_path)
+            results = load_pickle(active_learner.test_logfile_path)
             results.update({'batch_sizes': batch_sizes})
-            save_as_json(
+            save_as_pickle(
                 results,
                 os.path.join(
                     cfg['result_dir'],
-                    f'{TIMESTR}_results_active_{mode}.json'
+                    f'{TIMESTR}_results_active_{mode}.pkl'
                 )
             )
     else:
