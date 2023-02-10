@@ -23,7 +23,6 @@ from wildlifeml.utils.io import (
     load_json,
     load_pickle,
     save_as_csv,
-    save_as_json,
     save_as_pickle,
 )
 from wildlifeml.utils.misc import flatten_list
@@ -283,8 +282,9 @@ def main(repo_dir: str, experiment: str):
         n_obs = len(dataset_oos_trainval.keys)
         init_sizes: Final[List] = [128, 256, 512]
         init_rep: Final[int] = 5
-        n_max_batches = (n_obs - sum([x * init_rep for x in init_sizes])) // 1024
-        size_last_batch = n_obs - (init_sizes + n_max_batches * 1024)
+        n_init_batches = sum([x * init_rep for x in init_sizes])
+        n_max_batches = (n_obs - n_init_batches) // 1024
+        size_last_batch = n_obs - (n_init_batches + n_max_batches * 1024)
         batch_sizes = init_rep * init_sizes + n_max_batches * [1024] + [size_last_batch]
 
         for args, mode in zip(
