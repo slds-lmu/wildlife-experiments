@@ -146,6 +146,7 @@ def main(repo_dir: str, experiment: str):
             _, keys_nonempty_bbox = separate_empties(
                 os.path.join(cfg['data_dir'], cfg['detector_file']), float(threshold)
             )
+            breakpoint()
             # Prepare new train and val data according to threshold
             dataset_thresh = subset_dataset(
                 dataset_is_trainval,
