@@ -8,16 +8,12 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 import gc
-from typing import Dict, Final, List, Any
+from typing import Dict, Final, List
 from wildlifeml.data import subset_dataset
 from wildlifeml.training.trainer import WildlifeTrainer
 from wildlifeml.training.active import ActiveLearner
 from wildlifeml.training.evaluator import Evaluator
-from wildlifeml.utils.datasets import (
-    separate_empties,
-    map_bbox_to_img,
-    do_stratified_splitting
-)
+from wildlifeml.utils.datasets import separate_empties
 from wildlifeml.utils.io import (
     load_csv,
     load_json,
@@ -25,7 +21,6 @@ from wildlifeml.utils.io import (
     save_as_csv,
     save_as_pickle,
 )
-from wildlifeml.utils.misc import flatten_list
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 
