@@ -304,6 +304,7 @@ def main(repo_dir: str, experiment: str):
                 empty_class_id=empty_class_id,
                 acquisitor_name='entropy',
                 train_size=cfg['splits'][0],
+                conf_threshold=THRESH_TUNED,
                 test_dataset=dataset_oos_test,
                 test_logfile_path=os.path.join(
                     cfg['result_dir'], cfg['test_logfile'] + f'_{mode}.pkl'
