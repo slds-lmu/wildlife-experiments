@@ -114,8 +114,8 @@ def main(repo_dir: str, experiment: str):
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
         'num_classes': cfg['num_classes'],
-        'transfer_epochs': cfg['transfer_epochs'],
-        'finetune_epochs': cfg['finetune_epochs'],
+        'transfer_epochs': 3,  # cfg['transfer_epochs'],
+        'finetune_epochs': 3,  # cfg['finetune_epochs'],
         'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
         'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
         'finetune_layers': FTLAYERS_TUNED,
@@ -139,6 +139,8 @@ def main(repo_dir: str, experiment: str):
     if experiment == 'passive':
 
         thresholds = [THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
+        thresholds = [0.25, 0.5, 0.6, 0.7, 0.8, 0.9]
+        sample_sizes: Dict = {}
         details_ins_test: Dict = {}
         details_ins_val: Dict = {}
 
@@ -156,6 +158,7 @@ def main(repo_dir: str, experiment: str):
             )
             dataset_train_thresh = subset_dataset(dataset_is_train, keys_is_train)
             dataset_val_thresh = subset_dataset(dataset_is_val, keys_is_val)
+            sample_sizes.update({threshold: len(keys_is_train)})
 
             # Save train/val with chosen split for pretraining in active learning
             if threshold == THRESH_TUNED:
@@ -213,6 +216,10 @@ def main(repo_dir: str, experiment: str):
         save_as_pickle(
             details_ins_val,
             os.path.join(cfg['result_dir'], f'{TIMESTR}_insample_val.pkl')
+        )
+        save_as_pickle(
+            sample_sizes,
+            os.path.join(cfg['result_dir'], f'{TIMESTR}_sample_sizes.pkl')
         )
 
     # WITH AL (WARM- AND COLDSTART) ----------------------------------------------------
