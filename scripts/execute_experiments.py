@@ -22,6 +22,8 @@ from wildlifeml.utils.io import (
     save_as_pickle,
 )
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+import wandb
+from wandb.keras import WandbCallback
 
 
 TIMESTR: Final[str] = time.strftime("%Y%m%d%H%M")
@@ -114,8 +116,8 @@ def main(repo_dir: str, experiment: str):
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
         'num_classes': cfg['num_classes'],
-        'transfer_epochs': 3,  # cfg['transfer_epochs'],
-        'finetune_epochs': 3,  # cfg['finetune_epochs'],
+        'transfer_epochs': cfg['transfer_epochs'],
+        'finetune_epochs': cfg['finetune_epochs'],
         'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
         'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
         'finetune_layers': FTLAYERS_TUNED,
@@ -138,8 +140,8 @@ def main(repo_dir: str, experiment: str):
 
     if experiment == 'passive':
 
-        thresholds = [THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
-        thresholds = [0.25, 0.5, 0.6, 0.7, 0.8, 0.9]
+        # thresholds = [THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
+        thresholds = [0.9]
         sample_sizes: Dict = {}
         details_ins_test: Dict = {}
         details_ins_val: Dict = {}
@@ -171,6 +173,15 @@ def main(repo_dir: str, experiment: str):
                     os.path.join(cfg['data_dir'], f'dataset_is_val_thresh.pkl')
                 )
 
+            wandb.init(
+                project='wildlilfe',
+                tags=[
+                    f'conf_{threshold}',
+                    BACKBONE_TUNED,
+                    f'ftlayers_{FTLAYERS_TUNED}'
+                ]
+            )
+            transfer_callbacks.append(WandbCallback(save_code=True, save_model=False))
             # Compute confusion for entire pipeline
             trainer = WildlifeTrainer(**trainer_args)
             print('---> Training on wildlife data')
@@ -178,6 +189,7 @@ def main(repo_dir: str, experiment: str):
             trainer.fit(
                 train_dataset=dataset_train_thresh, val_dataset=dataset_val_thresh
             )
+            wandb.finish()
             print('---> Evaluating on in-sample test data')
             evaluator_ins_test = Evaluator(
                 dataset=dataset_is_test,
