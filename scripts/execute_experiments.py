@@ -141,7 +141,7 @@ def main(repo_dir: str, experiment: str):
     if experiment == 'passive':
 
         # thresholds = [THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
-        thresholds = [0.9]
+        thresholds = [0.25]
         sample_sizes: Dict = {}
         details_ins_test: Dict = {}
         details_ins_val: Dict = {}
