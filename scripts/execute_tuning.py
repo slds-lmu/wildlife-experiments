@@ -81,7 +81,7 @@ def main(repo_dir: str):
     search_space: Dict = {
         'model_backbone': ['xception', 'densenet121', 'inception_resnet_v2'],
         'finetune_layers': [0, 0.05, 0.25, 0.5],
-        'md_conf': [0.1, 0.5, 0.9]
+        'md_conf': [0.1, 0.25, 0.5, 0.9]
     }
     search_grid = list(product_dict(**search_space))
 
@@ -199,6 +199,7 @@ def main(repo_dir: str):
             combined = pd.concat([existing, df], ignore_index=True)
         else:
             combined = df
+        combined = combined.drop_duplicates(subset=list(set(col_names) - {'ts'}))
         combined.to_csv(archive_file)
 
         tf.keras.backend.clear_session()

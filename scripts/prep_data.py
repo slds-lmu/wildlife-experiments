@@ -69,6 +69,11 @@ def main(repo_dir: str):
     # GLOBAL ---------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------
 
+    save_as_json(
+        {'ins': STATIONS_IS, 'oos': STATIONS_OOS},
+        os.path.join(repo_dir, 'stations_list.json')
+    )
+    exit()
     cfg: Final[Dict] = load_json(os.path.join(repo_dir, 'configs/cfg.json'))
 
     # Create label map and  label file with two columns (img key, numeric label)
@@ -141,7 +146,8 @@ def main(repo_dir: str):
     keys_is = [k for k in all_keys if station_dict[k]['station'] in STATIONS_IS]
     keys_oos = [k for k in all_keys if station_dict[k]['station'] in STATIONS_OOS]
 
-    # Split keys into train/val/test
+    # Split keys into train/val/test (only two-way for in-sample bc splitting is done
+    # later according to chosen MD threshold)
     keys_is_train, keys_is_val, keys_is_test = do_stratified_splitting(
         img_keys=keys_is,
         splits=cfg['splits'],
@@ -178,7 +184,7 @@ def main(repo_dir: str):
             [
                 'is_train',
                 'is_val',
-                'is_trainval',
+                'is_train_val',
                 'is_test',
                 'oos_train',
                 'oos_val',

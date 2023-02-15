@@ -131,7 +131,6 @@ dmypy.json
 # Individual
 .idea/*
 .Rhistory
-*.pkl
 ray_results/
 .activecache.json
 *.csv#
@@ -139,3 +138,5 @@ data/pretrained*
 active/
 models/
 wandb/
+data/*
+example_files/*.pkl
