@@ -183,7 +183,7 @@ def main(repo_dir: str):
             ],
             [
                 'is_train',
-                'is_train',
+                'is_val',
                 'is_train_val',
                 'is_test',
                 'oos_train',
