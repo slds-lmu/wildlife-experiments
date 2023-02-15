@@ -4,6 +4,7 @@ import time
 import click
 import os
 
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
@@ -47,6 +48,7 @@ def main(repo_dir: str, experiment: str):
 
     cfg: Final[Dict] = load_json(os.path.join(repo_dir, 'configs/cfg.json'))
     os.makedirs(cfg['result_dir'], exist_ok=True)
+    os.environ['PYTHONHASHSEED'] = str(cfg['random_state'])
 
     # Get metadata
     label_dict = {
@@ -116,8 +118,8 @@ def main(repo_dir: str, experiment: str):
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
         'num_classes': cfg['num_classes'],
-        'transfer_epochs': cfg['transfer_epochs'],
-        'finetune_epochs': cfg['finetune_epochs'],
+        'transfer_epochs': 5,  # cfg['transfer_epochs'],
+        'finetune_epochs': 5,  # cfg['finetune_epochs'],
         'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
         'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
         'finetune_layers': FTLAYERS_TUNED,
@@ -141,7 +143,7 @@ def main(repo_dir: str, experiment: str):
     if experiment == 'passive':
 
         # thresholds = [THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
-        thresholds = [0.25]
+        thresholds = [0.9]
         sample_sizes: Dict = {}
         details_ins_test: Dict = {}
         details_ins_val: Dict = {}
@@ -183,9 +185,19 @@ def main(repo_dir: str, experiment: str):
             )
             transfer_callbacks.append(WandbCallback(save_code=True, save_model=False))
             # Compute confusion for entire pipeline
+            np.random.seed(cfg['random_state'])
             trainer = WildlifeTrainer(**trainer_args)
             print('---> Training on wildlife data')
             tf.random.set_seed(cfg['random_state'])
+            tf.random.set_seed(cfg['random_state'])
+            session_conf = tf.compat.v1.ConfigProto(
+                intra_op_parallelism_threads=1, inter_op_parallelism_threads=1
+            )
+            tf.compat.v1.keras.backend.set_session(
+                tf.compat.v1.Session(
+                    graph=tf.compat.v1.get_default_graph(), config=session_conf
+                )
+            )
             trainer.fit(
                 train_dataset=dataset_train_thresh, val_dataset=dataset_val_thresh
             )
