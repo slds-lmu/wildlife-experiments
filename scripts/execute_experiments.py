@@ -126,7 +126,7 @@ def main(repo_dir: str, experiment: str):
         'model_backbone': BACKBONE_TUNED,
         'transfer_callbacks': transfer_callbacks,
         'finetune_callbacks': finetune_callbacks,
-        'num_workers': cfg['num_workers'],
+        'num_workers': 0,  # cfg['num_workers'],
         'eval_metrics': cfg['eval_metrics'],
     }
     evaluator_args: Dict = {
@@ -188,8 +188,7 @@ def main(repo_dir: str, experiment: str):
             np.random.seed(cfg['random_state'])
             trainer = WildlifeTrainer(**trainer_args)
             print('---> Training on wildlife data')
-            tf.random.set_seed(cfg['random_state'])
-            tf.random.set_seed(cfg['random_state'])
+            tf.compat.v1.set_random_seed(cfg['random_state'])
             session_conf = tf.compat.v1.ConfigProto(
                 intra_op_parallelism_threads=1, inter_op_parallelism_threads=1
             )
