@@ -3,6 +3,8 @@ import math
 import os
 import gc
 import time
+
+import numpy as np
 import pandas as pd
 from typing import Final, Dict, List
 import click
@@ -120,6 +122,8 @@ def main(repo_dir: str):
         )
         dataset_is_train = subset_dataset(dataset_is_train, keys_is_train)
         dataset_is_val_highconf = subset_dataset(dataset_is_val, keys_is_val)
+        dataset_is_val.augmentation = None
+        dataset_is_val_highconf.augmentation = None
 
         # Determine number of finetuning layers
         model = ModelFactory.get(model_id=this_backbone, num_classes=cfg['num_classes'])
@@ -159,7 +163,17 @@ def main(repo_dir: str):
         # Train
         trainer = WildlifeTrainer(**trainer_args)
         print(f'---> Training with configuration {idx}')
+        np.random.seed(cfg['random_state'])
         tf.random.set_seed(cfg['random_state'])
+        tf.compat.v1.set_random_seed(cfg['random_state'])
+        session_conf = tf.compat.v1.ConfigProto(
+            intra_op_parallelism_threads=1, inter_op_parallelism_threads=1
+        )
+        tf.compat.v1.keras.backend.set_session(
+            tf.compat.v1.Session(
+                graph=tf.compat.v1.get_default_graph(), config=session_conf
+            )
+        )
         trainer.fit(dataset_is_train, dataset_is_val_highconf)
         wandb.finish()
 
