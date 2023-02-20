@@ -81,7 +81,7 @@ def main(repo_dir: str):
 
     # Define search grid
     search_space: Dict = {
-        'model_backbone': ['xception', 'densenet121', 'inception_resnet_v2'],
+        'model_backbone': ['xception'],  # ['xception', 'densenet121', 'inception_resnet_v2'],
         'finetune_layers': [0, 0.05, 0.25, 0.5],
         'md_conf': [0.1, 0.25, 0.5, 0.9]
     }
