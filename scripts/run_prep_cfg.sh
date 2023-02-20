@@ -19,6 +19,4 @@ fi
 python scripts/prep_config.py \
 --repo_dir=$PERSONALFOLDER/wildlife-experiments/ \
 --root_dir=$ROOTDIR \
---img_dir=$IMGDIR && \
-python scripts/prep_data.py \
---repo_dir=$PERSONALFOLDER/wildlife-experiments/
+--img_dir=$IMGDIR
