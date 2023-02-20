@@ -122,6 +122,8 @@ def main(repo_dir: str):
         )
         dataset_is_train = subset_dataset(dataset_is_train, keys_is_train)
         dataset_is_val_highconf = subset_dataset(dataset_is_val, keys_is_val)
+        dataset_is_val.shuffle = False
+        dataset_is_val_highconf.shuffle = False
         dataset_is_val.augmentation = None
         dataset_is_val_highconf.augmentation = None
 
