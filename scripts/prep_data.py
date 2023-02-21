@@ -69,11 +69,6 @@ def main(repo_dir: str):
     # GLOBAL ---------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------
 
-    save_as_json(
-        {'ins': STATIONS_IS, 'oos': STATIONS_OOS},
-        os.path.join(repo_dir, 'stations_list.json')
-    )
-    exit()
     cfg: Final[Dict] = load_json(os.path.join(repo_dir, 'configs/cfg.json'))
 
     # Create label map and  label file with two columns (img key, numeric label)

@@ -81,7 +81,7 @@ def main(repo_dir: str):
 
     # Define search grid
     search_space: Dict = {
-        'model_backbone': ['xception'],  # ['xception', 'densenet121', 'inception_resnet_v2'],
+        'model_backbone': ['densenet121'],  # ['xception', 'densenet121', 'inception_resnet_v2'],
         'finetune_layers': [0, 0.05, 0.25, 0.5],
         'md_conf': [0.1, 0.25, 0.5, 0.9]
     }
@@ -209,7 +209,7 @@ def main(repo_dir: str):
             ]
         )
         df = pd.DataFrame(tuning_archive, columns=col_names)
-        archive_file = os.path.join(cfg['result_dir'], 'results_tuning_archive.csv')
+        archive_file = os.path.join(cfg['result_dir'], 'results_tuning_archive_2.csv')
         if os.path.exists(archive_file):
             existing = pd.read_csv(archive_file, usecols=col_names)
             combined = pd.concat([existing, df], ignore_index=True)
