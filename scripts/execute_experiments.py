@@ -162,7 +162,6 @@ def main(repo_dir: str, experiment: str):
             )
             dataset_train_thresh = subset_dataset(dataset_is_train, keys_is_train)
             dataset_val_thresh = subset_dataset(dataset_is_val, keys_is_val)
-            breakpoint()
 
             # Save train/val with chosen split for pretraining in active learning
             if threshold == THRESH_TUNED:
