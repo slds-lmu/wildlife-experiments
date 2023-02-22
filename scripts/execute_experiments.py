@@ -28,11 +28,11 @@ from wandb.keras import WandbCallback
 
 
 TIMESTR: Final[str] = time.strftime("%Y%m%d%H%M")
-THRESH_TUNED: Final[float] = 0.25
+THRESH_TUNED: Final[float] = 0.1
 THRESH_PROGRESSIVE: Final[float] = 0.5
 THRESH_NOROUZZADEH: Final[float] = 0.9
-BACKBONE_TUNED: Final[str] = 'xception'
-FTLAYERS_TUNED: Final[int] = 33
+BACKBONE_TUNED: Final[str] = 'inception_resnet_v2'
+FTLAYERS_TUNED: Final[int] = 0
 
 
 @click.command()
@@ -67,9 +67,6 @@ def main(repo_dir: str, experiment: str):
     dataset_is_val = load_pickle(os.path.join(
         cfg['data_dir'], 'dataset_is_val.pkl')
     )
-    dataset_is_trainval = load_pickle(os.path.join(
-        cfg['data_dir'], 'dataset_is_trainval.pkl')
-    )
     dataset_is_test = load_pickle(
         os.path.join(cfg['data_dir'], 'dataset_is_test.pkl')
     )
@@ -85,6 +82,9 @@ def main(repo_dir: str, experiment: str):
     dataset_oos_test = load_pickle(os.path.join(
         cfg['data_dir'], 'dataset_oos_test.pkl')
     )
+    for ds in [dataset_is_val, dataset_is_test, dataset_oos_val, dataset_oos_test]:
+        ds.shuffle = False
+        ds.augmentation = None
     empty_class_id = load_json(
         os.path.join(cfg['data_dir'], 'label_map.json')
     ).get('empty')
@@ -118,15 +118,15 @@ def main(repo_dir: str, experiment: str):
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
         'num_classes': cfg['num_classes'],
-        'transfer_epochs': 5,  # cfg['transfer_epochs'],
-        'finetune_epochs': 5,  # cfg['finetune_epochs'],
+        'transfer_epochs': cfg['transfer_epochs'],
+        'finetune_epochs': cfg['finetune_epochs'],
         'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
         'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
         'finetune_layers': FTLAYERS_TUNED,
         'model_backbone': BACKBONE_TUNED,
         'transfer_callbacks': transfer_callbacks,
         'finetune_callbacks': finetune_callbacks,
-        'num_workers': 0,  # cfg['num_workers'],
+        'num_workers': cfg['num_workers'],
         'eval_metrics': cfg['eval_metrics'],
     }
     evaluator_args: Dict = {
@@ -142,8 +142,8 @@ def main(repo_dir: str, experiment: str):
 
     if experiment == 'passive':
 
-        # thresholds = [THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
-        thresholds = [0.9]
+        thresholds = [THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
+        # thresholds = [0.9]
         sample_sizes: Dict = {}
         details_ins_test: Dict = {}
         details_ins_val: Dict = {}
@@ -162,7 +162,7 @@ def main(repo_dir: str, experiment: str):
             )
             dataset_train_thresh = subset_dataset(dataset_is_train, keys_is_train)
             dataset_val_thresh = subset_dataset(dataset_is_val, keys_is_val)
-            sample_sizes.update({threshold: len(keys_is_train)})
+            breakpoint()
 
             # Save train/val with chosen split for pretraining in active learning
             if threshold == THRESH_TUNED:
