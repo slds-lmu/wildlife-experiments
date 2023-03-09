@@ -142,7 +142,7 @@ def main(repo_dir: str, experiment: str):
 
     if experiment == 'passive':
 
-        # thresholds = [THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
+        # thresholds = [0., THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
         thresholds = [THRESH_TUNED]
         sample_sizes: Dict = {}
         details_ins_test: Dict = {}
@@ -151,17 +151,28 @@ def main(repo_dir: str, experiment: str):
         for threshold in thresholds:
 
             # Get imgs that MD classifies as empty
-            _, keys_all_nonempty = separate_empties(
-                os.path.join(cfg['data_dir'], cfg['detector_file']), float(threshold)
-            )
-            keys_is_train = list(
-                set(dataset_is_train.keys).intersection(set(keys_all_nonempty))
-            )
-            keys_is_val = list(
-                set(dataset_is_val.keys).intersection(set(keys_all_nonempty))
-            )
+            if threshold == 0.:
+                keys_is_train = dataset_is_train.keys
+                keys_is_val = dataset_is_val.keys
+            else:
+                _, keys_all_nonempty = separate_empties(
+                    os.path.join(
+                        cfg['data_dir'], cfg['detector_file']), float(threshold)
+                )
+                keys_is_train = list(
+                    set(dataset_is_train.keys).intersection(set(keys_all_nonempty))
+                )
+                keys_is_val = list(
+                    set(dataset_is_val.keys).intersection(set(keys_all_nonempty))
+                )
             dataset_train_thresh = subset_dataset(dataset_is_train, keys_is_train)
             dataset_val_thresh = subset_dataset(dataset_is_val, keys_is_val)
+            dataset_test_thresh = subset_dataset(dataset_is_test, dataset_is_test.keys)
+            if threshold == 0.:
+                # Effectively omit MD from pipeline
+                dataset_train_thresh.do_cropping = False
+                dataset_val_thresh.do_cropping = False
+                dataset_test_thresh.do_cropping = False
 
             # Save train/val with chosen split for pretraining in active learning
             if threshold == THRESH_TUNED:
@@ -202,20 +213,20 @@ def main(repo_dir: str, experiment: str):
             wandb.finish()
             print('---> Evaluating on in-sample test data')
             evaluator_ins_test = Evaluator(
-                dataset=dataset_is_test,
+                dataset=dataset_test_thresh,
                 conf_threshold=float(threshold),
                 **evaluator_args,
             )
             evaluator_ins_test.evaluate(trainer)
             details_ins_test[threshold] = evaluator_ins_test.get_details()
-            print('---> Evaluating on in-sample val data')
-            evaluator_ins_val = Evaluator(
-                dataset=dataset_is_val,
-                conf_threshold=float(threshold),
-                **evaluator_args,
-            )
-            evaluator_ins_val.evaluate(trainer)
-            details_ins_val[threshold] = evaluator_ins_val.get_details()
+            # print('---> Evaluating on in-sample val data')
+            # evaluator_ins_val = Evaluator(
+            #     dataset=dataset_is_val,
+            #     conf_threshold=float(threshold),
+            #     **evaluator_args,
+            # )
+            # evaluator_ins_val.evaluate(trainer)
+            # details_ins_val[threshold] = evaluator_ins_val.get_details()
 
             if threshold == THRESH_TUNED:
                 print('---> Evaluating on out-of-sample test data')

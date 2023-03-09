@@ -184,7 +184,7 @@ def main(repo_dir: str, random_seed: int):
         )
         print(f'---> Evaluating for configuration {idx}')
         evaluator.evaluate(trainer)
-        result = evaluator.get_details()
+        result = evaluator.compute_metrics()
         tuning_archive.append(
             [
                 TIMESTR,
