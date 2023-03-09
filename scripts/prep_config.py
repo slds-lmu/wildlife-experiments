@@ -27,7 +27,6 @@ def main(repo_dir: str, root_dir: str, img_dir: str):
         'meta_file': 'stations.csv',
         'md_conf': 0.1,
         'md_batchsize': 32,
-        'random_state': 123,
         'splits': (0.7, 0.15, 0.15),
         'batch_size': 32,
         'num_classes': 8,

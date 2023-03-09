@@ -15,6 +15,7 @@ from wildlifeml.utils.io import (
     save_as_pickle
 )
 from wildlifeml.utils.misc import flatten_list
+from utils import seed_everything
 
 STATIONS_IS: Final[List] = [
     '8235_For',
@@ -63,12 +64,16 @@ STATIONS_OOS: Final[List] = [
 @click.option(
     '--repo_dir', '-p', help='Your personal path to this repo.', required=True
 )
-def main(repo_dir: str):
+@click.option(
+    '--random_seed', '-s', help='Random seed.', required=True
+)
+def main(repo_dir: str, random_seed: int):
 
     # ----------------------------------------------------------------------------------
     # GLOBAL ---------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------
 
+    seed_everything(random_seed)
     cfg: Final[Dict] = load_json(os.path.join(repo_dir, 'configs/cfg.json'))
 
     # Create label map and  label file with two columns (img key, numeric label)
