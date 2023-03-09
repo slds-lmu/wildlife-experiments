@@ -9,7 +9,6 @@
     "meta_file": "stations.csv",
     "md_conf": 0.1,
     "md_batchsize": 32,
-    "random_state": 123,
     "splits": [
         0.7,
         0.15,

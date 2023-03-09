@@ -17,6 +17,7 @@ def product_dict(**kwargs):
 
 def seed_everything(seed: int) -> None:
     """At least we tried."""
+    seed = int(seed)
     tf.random.set_seed(seed)
     tf.compat.v1.set_random_seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
@@ -29,5 +30,3 @@ def seed_everything(seed: int) -> None:
         graph=tf.compat.v1.get_default_graph(), config=session_conf
     )
     tf.compat.v1.keras.backend.set_session(sess)
-    tf.keras.utils.set_random_seed(seed)
-    tf.config.experimental.enable_op_determinism()

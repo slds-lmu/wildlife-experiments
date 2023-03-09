@@ -152,13 +152,13 @@ def main(repo_dir: str, random_seed: int):
         img_keys=keys_is,
         splits=cfg['splits'],
         meta_dict=station_dict,
-        random_state=cfg['random_state']
+        random_state=random_seed,
     )
     keys_oos_train, keys_oos_val, keys_oos_test = do_stratified_splitting(
         img_keys=keys_oos,
         splits=cfg['splits'],
         meta_dict=station_dict,
-        random_state=cfg['random_state']
+        random_state=random_seed,
     )
 
     # Map keys to bbxox level
