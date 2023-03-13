@@ -4,7 +4,6 @@ import time
 import click
 import os
 
-import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
@@ -26,12 +25,13 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import wandb
 from wandb.keras import WandbCallback
 
+from utils import seed_everything
 
 TIMESTR: Final[str] = time.strftime("%Y%m%d%H%M")
-THRESH_TUNED: Final[float] = 0.1
+THRESH_TUNED: Final[float] = 0.7
 THRESH_PROGRESSIVE: Final[float] = 0.5
 THRESH_NOROUZZADEH: Final[float] = 0.9
-BACKBONE_TUNED: Final[str] = 'inception_resnet_v2'
+BACKBONE_TUNED: Final[str] = 'xception'
 FTLAYERS_TUNED: Final[int] = 0
 
 
@@ -40,15 +40,18 @@ FTLAYERS_TUNED: Final[int] = 0
     '--repo_dir', '-p', help='Your personal path to this repo.', required=True
 )
 @click.option('--experiment', '-e', help='Experiment to be run.', required=True)
-def main(repo_dir: str, experiment: str):
+@click.option(
+    '--random_seed', '-s', help='Random seed.', required=True
+)
+def main(repo_dir: str, experiment: str, random_seed: int):
 
     # ----------------------------------------------------------------------------------
     # GLOBAL ---------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------
 
     cfg: Final[Dict] = load_json(os.path.join(repo_dir, 'configs/cfg.json'))
+    seed_everything(random_seed)
     os.makedirs(cfg['result_dir'], exist_ok=True)
-    os.environ['PYTHONHASHSEED'] = str(cfg['random_state'])
 
     # Get metadata
     label_dict = {
@@ -142,8 +145,8 @@ def main(repo_dir: str, experiment: str):
 
     if experiment == 'passive':
 
-        # thresholds = [0., THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
-        thresholds = [THRESH_TUNED]
+        thresholds = [0., THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
+        # thresholds = [THRESH_TUNED]
         sample_sizes: Dict = {}
         details_ins_test: Dict = {}
         details_ins_val: Dict = {}
@@ -185,32 +188,22 @@ def main(repo_dir: str, experiment: str):
                     os.path.join(cfg['data_dir'], f'dataset_is_val_thresh.pkl')
                 )
 
-            wandb.init(
-                project='wildlilfe',
-                tags=[
-                    f'conf_{threshold}',
-                    BACKBONE_TUNED,
-                    f'ftlayers_{FTLAYERS_TUNED}'
-                ]
-            )
-            transfer_callbacks.append(WandbCallback(save_code=True, save_model=False))
+            # wandb.init(
+            #     project='wildlilfe',
+            #     tags=[
+            #         f'conf_{threshold}',
+            #         BACKBONE_TUNED,
+            #         f'ftlayers_{FTLAYERS_TUNED}'
+            #     ]
+            # )
+            # transfer_callbacks.append(WandbCallback(save_code=True, save_model=False))
             # Compute confusion for entire pipeline
-            np.random.seed(cfg['random_state'])
             trainer = WildlifeTrainer(**trainer_args)
             print('---> Training on wildlife data')
-            tf.compat.v1.set_random_seed(cfg['random_state'])
-            session_conf = tf.compat.v1.ConfigProto(
-                intra_op_parallelism_threads=1, inter_op_parallelism_threads=1
-            )
-            tf.compat.v1.keras.backend.set_session(
-                tf.compat.v1.Session(
-                    graph=tf.compat.v1.get_default_graph(), config=session_conf
-                )
-            )
             trainer.fit(
                 train_dataset=dataset_train_thresh, val_dataset=dataset_val_thresh
             )
-            wandb.finish()
+            # wandb.finish()
             print('---> Evaluating on in-sample test data')
             evaluator_ins_test = Evaluator(
                 dataset=dataset_test_thresh,
@@ -239,20 +232,20 @@ def main(repo_dir: str, experiment: str):
                 details_oos = evaluator_oos.get_details()
                 save_as_pickle(
                     details_oos,
-                    os.path.join(cfg['result_dir'], f'{TIMESTR}_oosample.pkl')
+                    os.path.join(
+                        cfg['result_dir'], f'{TIMESTR}_oosample_{random_seed}.pkl'
+                    )
                 )
 
         save_as_pickle(
             details_ins_test,
-            os.path.join(cfg['result_dir'], f'{TIMESTR}_insample_test.pkl')
+            os.path.join(
+                cfg['result_dir'], f'{TIMESTR}_insample_test_{random_seed}.pkl'
+            )
         )
         save_as_pickle(
             details_ins_val,
-            os.path.join(cfg['result_dir'], f'{TIMESTR}_insample_val.pkl')
-        )
-        save_as_pickle(
-            sample_sizes,
-            os.path.join(cfg['result_dir'], f'{TIMESTR}_sample_sizes.pkl')
+            os.path.join(cfg['result_dir'], f'{TIMESTR}_insample_val_{random_seed}.pkl')
         )
 
     # WITH AL (WARM- AND COLDSTART) ----------------------------------------------------
