@@ -17,5 +17,5 @@ fi
 
 python scripts/execute_experiments.py \
 --repo_dir=$PERSONALFOLDER/wildlife-experiments/ \
---experiment=$EXPERIMENT
+--experiment=$EXPERIMENT \
 --random_seed=$SEED
