@@ -145,8 +145,8 @@ def main(repo_dir: str, experiment: str, random_seed: int):
 
     if experiment == 'passive':
 
-        thresholds = [0., THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
-        # thresholds = [THRESH_TUNED]
+        # thresholds = [0., THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
+        thresholds = [0.]
         sample_sizes: Dict = {}
         details_ins_test: Dict = {}
         details_ins_val: Dict = {}
@@ -212,14 +212,14 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             )
             evaluator_ins_test.evaluate(trainer)
             details_ins_test[threshold] = evaluator_ins_test.get_details()
-            # print('---> Evaluating on in-sample val data')
-            # evaluator_ins_val = Evaluator(
-            #     dataset=dataset_is_val,
-            #     conf_threshold=float(threshold),
-            #     **evaluator_args,
-            # )
-            # evaluator_ins_val.evaluate(trainer)
-            # details_ins_val[threshold] = evaluator_ins_val.get_details()
+            print('---> Evaluating on in-sample val data')
+            evaluator_ins_val = Evaluator(
+                dataset=dataset_is_val,
+                conf_threshold=float(threshold),
+                **evaluator_args,
+            )
+            evaluator_ins_val.evaluate(trainer)
+            details_ins_val[threshold] = evaluator_ins_val.get_details()
 
             if threshold == THRESH_TUNED:
                 print('---> Evaluating on out-of-sample test data')
