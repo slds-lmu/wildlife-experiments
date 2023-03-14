@@ -149,8 +149,8 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 cnt = dict(collections.Counter(labels))
                 total_count = sum(cnt.values())
                 relative = {}
-                for key in cnt:
-                    relative[key] = cnt[key] / total_count
+                for key in sourted(list(cnt.keys())):
+                    relative[key] = round(cnt[key] / total_count, 2)
                 print(relative)
 
             continue
