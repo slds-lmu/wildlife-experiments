@@ -13,7 +13,7 @@ from wildlifeml.data import subset_dataset
 from wildlifeml.training.trainer import WildlifeTrainer
 from wildlifeml.training.active import ActiveLearner
 from wildlifeml.training.evaluator import Evaluator
-from wildlifeml.utils.datasets import separate_empties
+from wildlifeml.utils.datasets import separate_empties, map_bbox_to_img
 from wildlifeml.utils.io import (
     load_csv,
     load_json,
