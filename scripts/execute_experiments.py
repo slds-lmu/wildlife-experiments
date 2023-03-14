@@ -145,7 +145,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             dataset_test_thresh = subset_dataset(dataset_is_test, dataset_is_test.keys)
 
             for ds in [dataset_train_thresh, dataset_val_thresh, dataset_test_thresh]:
-                labels = [ds.label_dict[k] for k in ds.keys]
+                labels = [ds.label_dict[map_bbox_to_img(k)] for k in ds.keys]
                 print(collections.Counter(labels))
 
             continue
