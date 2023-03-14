@@ -5,6 +5,7 @@ import click
 import os
 
 import tensorflow as tf
+from flatbuffers.builder import np
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 import gc
@@ -119,7 +120,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
     if experiment == 'passive':
 
         # thresholds = [0., THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
-        thresholds = [0.]
+        thresholds = np.arange(0.1, 1, 0.2).round(2).tolist()
         details_ins_test: Dict = {}
         details_ins_val: Dict = {}
 
@@ -144,16 +145,14 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             dataset_val_thresh = subset_dataset(dataset_is_val, keys_is_val)
             dataset_test_thresh = subset_dataset(dataset_is_test, dataset_is_test.keys)
 
-            for ds in [dataset_train_thresh, dataset_val_thresh, dataset_test_thresh]:
-                labels = [ds.label_dict[map_bbox_to_img(k)] for k in ds.keys]
-                cnt = dict(collections.Counter(labels))
-                total_count = sum(cnt.values())
-                relative = {}
-                for key in sourted(list(cnt.keys())):
-                    relative[key] = round(cnt[key] / total_count, 2)
-                print(relative)
-
-            continue
+            # for ds in [dataset_train_thresh, dataset_val_thresh, dataset_test_thresh]:
+            #     labels = [ds.label_dict[map_bbox_to_img(k)] for k in ds.keys]
+            #     cnt = dict(collections.Counter(labels))
+            #     total_count = sum(cnt.values())
+            #     relative = {}
+            #     for key in sorted(list(cnt.keys())):
+            #         relative[key] = round(cnt[key] / total_count, 2)
+            #     print(relative)
 
             if threshold == 0.:
                 # Effectively omit MD from pipeline
