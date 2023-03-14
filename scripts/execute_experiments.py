@@ -1,5 +1,5 @@
 """In-sample results."""
-
+import collections
 import time
 import click
 import os
@@ -92,32 +92,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         os.path.join(cfg['data_dir'], 'label_map.json')
     ).get('empty')
 
-    # Prepare training
-    transfer_callbacks = [
-        EarlyStopping(
-            monitor=cfg['earlystop_metric'],
-            patience=2 * cfg['transfer_patience'],
-        ),
-        ReduceLROnPlateau(
-            monitor=cfg['earlystop_metric'],
-            patience=cfg['transfer_patience'],
-            factor=0.1,
-            verbose=1,
-        ),
-    ]
-    finetune_callbacks = [
-        EarlyStopping(
-            monitor=cfg['earlystop_metric'],
-            patience=2 * cfg['finetune_patience'],
-        ),
-        ReduceLROnPlateau(
-            monitor=cfg['earlystop_metric'],
-            patience=cfg['finetune_patience'],
-            factor=0.1,
-            verbose=1,
-        )
-    ]
-    trainer_args: Dict = {
+    trainer_args: Final[Dict] = {
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
         'num_classes': cfg['num_classes'],
@@ -127,12 +102,10 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
         'finetune_layers': FTLAYERS_TUNED,
         'model_backbone': BACKBONE_TUNED,
-        'transfer_callbacks': transfer_callbacks,
-        'finetune_callbacks': finetune_callbacks,
         'num_workers': cfg['num_workers'],
         'eval_metrics': cfg['eval_metrics'],
     }
-    evaluator_args: Dict = {
+    evaluator_args: Final[Dict] = {
         'label_file_path': os.path.join(cfg['data_dir'], cfg['label_file']),
         'detector_file_path': os.path.join(cfg['data_dir'], cfg['detector_file']),
         'num_classes': cfg['num_classes'],
@@ -147,7 +120,6 @@ def main(repo_dir: str, experiment: str, random_seed: int):
 
         # thresholds = [0., THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
         thresholds = [0.]
-        sample_sizes: Dict = {}
         details_ins_test: Dict = {}
         details_ins_val: Dict = {}
 
@@ -171,6 +143,13 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             dataset_train_thresh = subset_dataset(dataset_is_train, keys_is_train)
             dataset_val_thresh = subset_dataset(dataset_is_val, keys_is_val)
             dataset_test_thresh = subset_dataset(dataset_is_test, dataset_is_test.keys)
+
+            for ds in [dataset_train_thresh, dataset_val_thresh, dataset_test_thresh]:
+                labels = [ds.label_dict[k] for k in ds.keys]
+                print(collections.Counter(labels))
+
+            continue
+
             if threshold == 0.:
                 # Effectively omit MD from pipeline
                 dataset_train_thresh.do_cropping = False
@@ -198,7 +177,41 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             # )
             # transfer_callbacks.append(WandbCallback(save_code=True, save_model=False))
             # Compute confusion for entire pipeline
-            trainer = WildlifeTrainer(**trainer_args)
+
+            # Prepare training
+            transfer_callbacks = [
+                EarlyStopping(
+                    monitor=cfg['earlystop_metric'],
+                    patience=2 * cfg['transfer_patience'],
+                ),
+                ReduceLROnPlateau(
+                    monitor=cfg['earlystop_metric'],
+                    patience=cfg['transfer_patience'],
+                    factor=0.1,
+                    verbose=1,
+                ),
+            ]
+            finetune_callbacks = [
+                EarlyStopping(
+                    monitor=cfg['earlystop_metric'],
+                    patience=2 * cfg['finetune_patience'],
+                ),
+                ReduceLROnPlateau(
+                    monitor=cfg['earlystop_metric'],
+                    patience=cfg['finetune_patience'],
+                    factor=0.1,
+                    verbose=1,
+                )
+            ]
+            this_trainer_args: Dict = dict(
+                {
+                    'transfer_callbacks': transfer_callbacks,
+                    'finetune_callbacks': finetune_callbacks
+                },
+                **trainer_args
+            )
+
+            trainer = WildlifeTrainer(**this_trainer_args)
             print('---> Training on wildlife data')
             trainer.fit(
                 train_dataset=dataset_train_thresh, val_dataset=dataset_val_thresh
