@@ -118,7 +118,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
 
     if experiment == 'passive':
 
-        thresholds = [0.3]
+        thresholds = [0.9]
         # thresholds = np.arange(0.1, 1, 0.2).round(2).tolist()
         # details_ins_test: Dict = {}
         # details_ins_val: Dict = {}
