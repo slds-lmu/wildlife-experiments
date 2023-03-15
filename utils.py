@@ -2,7 +2,7 @@
 
 import itertools
 
-import keras.utils
+from tensorflow import keras
 import tensorflow as tf
 import os
 import random
