@@ -2,7 +2,6 @@
 
 import itertools
 
-from tensorflow import keras
 import tensorflow as tf
 import os
 import random
@@ -32,4 +31,3 @@ def seed_everything(seed: int) -> None:
         graph=tf.compat.v1.get_default_graph(), config=session_conf
     )
     tf.compat.v1.keras.backend.set_session(sess)
-    keras.utils.set_random_seed(seed)
