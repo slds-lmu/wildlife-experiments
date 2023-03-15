@@ -19,7 +19,7 @@ from wildlifeml.training.evaluator import Evaluator
 from wildlifeml.training.models import ModelFactory
 from wildlifeml.training.trainer import WildlifeTrainer
 from wildlifeml.utils.datasets import separate_empties
-from wildlifeml.utils.io import load_json, load_pickle, save_as_json
+from wildlifeml.utils.io import load_json, load_pickle
 
 from utils import product_dict, seed_everything
 
@@ -59,9 +59,9 @@ def main(repo_dir: str, random_seed: int):
 
     # Define search grid
     search_space: Dict = {
-        'model_backbone': ['xception'],  # ['xception', 'densenet121', 'inception_resnet_v2'],
+        'model_backbone': ['xception', 'densenet121', 'inception_resnet_v2'],
         'finetune_layers': [0.],  # [0, 0.05, 0.25, 0.5],
-        'md_conf': [0.1]  # np.arange(0.1, 1, 0.2).round(2).tolist()
+        'md_conf': np.arange(0.1, 1, 0.2).round(2).tolist()
     }
     search_grid = list(product_dict(**search_space))
 
