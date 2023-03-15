@@ -1,11 +1,10 @@
 """In-sample results."""
-import collections
+
 import time
 import click
 import os
 
 import tensorflow as tf
-from flatbuffers.builder import np
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 import gc
@@ -119,12 +118,15 @@ def main(repo_dir: str, experiment: str, random_seed: int):
 
     if experiment == 'passive':
 
-        # thresholds = [0., THRESH_TUNED, THRESH_PROGRESSIVE, THRESH_NOROUZZADEH]
-        thresholds = np.arange(0.1, 1, 0.2).round(2).tolist()
-        details_ins_test: Dict = {}
-        details_ins_val: Dict = {}
+        thresholds = [0.]
+        # thresholds = np.arange(0.1, 1, 0.2).round(2).tolist()
+        # details_ins_test: Dict = {}
+        # details_ins_val: Dict = {}
 
         for threshold in thresholds:
+
+            str_thresh = str(int(100 * threshold))
+            os.makedirs(os.path.join(cfg['result_dir'], str_thresh), exist_ok=True)
 
             # Get imgs that MD classifies as empty
             if threshold == 0.:
@@ -171,17 +173,6 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                     os.path.join(cfg['data_dir'], f'dataset_is_val_thresh.pkl')
                 )
 
-            # wandb.init(
-            #     project='wildlilfe',
-            #     tags=[
-            #         f'conf_{threshold}',
-            #         BACKBONE_TUNED,
-            #         f'ftlayers_{FTLAYERS_TUNED}'
-            #     ]
-            # )
-            # transfer_callbacks.append(WandbCallback(save_code=True, save_model=False))
-            # Compute confusion for entire pipeline
-
             # Prepare training
             transfer_callbacks = [
                 EarlyStopping(
@@ -207,6 +198,15 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                     verbose=1,
                 )
             ]
+            wandb.init(
+                project='wildlilfe',
+                tags=[
+                    f'conf_{threshold}',
+                    BACKBONE_TUNED,
+                    f'ftlayers_{FTLAYERS_TUNED}'
+                ]
+            )
+            transfer_callbacks.append(WandbCallback(save_code=True, save_model=False))
             this_trainer_args: Dict = dict(
                 {
                     'transfer_callbacks': transfer_callbacks,
@@ -220,23 +220,24 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             trainer.fit(
                 train_dataset=dataset_train_thresh, val_dataset=dataset_val_thresh
             )
-            # wandb.finish()
-            print('---> Evaluating on in-sample test data')
-            evaluator_ins_test = Evaluator(
-                dataset=dataset_test_thresh,
-                conf_threshold=float(threshold),
-                **evaluator_args,
-            )
-            evaluator_ins_test.evaluate(trainer)
-            details_ins_test[threshold] = evaluator_ins_test.get_details()
-            print('---> Evaluating on in-sample val data')
-            evaluator_ins_val = Evaluator(
-                dataset=dataset_is_val,
-                conf_threshold=float(threshold),
-                **evaluator_args,
-            )
-            evaluator_ins_val.evaluate(trainer)
-            details_ins_val[threshold] = evaluator_ins_val.get_details()
+            wandb.finish()
+
+            for ds, n in zip(
+                [dataset_test_thresh, dataset_val_thresh], ['test', 'val']
+            ):
+                print('---> Evaluating on in-sample data')
+                evaluator = Evaluator(
+                    dataset=ds, conf_threshold=float(threshold), **evaluator_args,
+                )
+                evaluator.evaluate(trainer)
+                save_as_pickle(
+                    evaluator.get_details(),
+                    os.path.join(
+                        cfg['result_dir'],
+                        str_thresh,
+                        f'{TIMESTR}_insample_{n}_{random_seed}.pkl'
+                    )
+                )
 
             if threshold == THRESH_TUNED:
                 print('---> Evaluating on out-of-sample test data')
@@ -250,20 +251,11 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 save_as_pickle(
                     details_oos,
                     os.path.join(
-                        cfg['result_dir'], f'{TIMESTR}_oosample_{random_seed}.pkl'
+                        cfg['result_dir'],
+                        str_thresh,
+                        f'{TIMESTR}_oosample_{random_seed}.pkl'
                     )
                 )
-
-        save_as_pickle(
-            details_ins_test,
-            os.path.join(
-                cfg['result_dir'], f'{TIMESTR}_insample_test_{random_seed}.pkl'
-            )
-        )
-        save_as_pickle(
-            details_ins_val,
-            os.path.join(cfg['result_dir'], f'{TIMESTR}_insample_val_{random_seed}.pkl')
-        )
 
     # WITH AL (WARM- AND COLDSTART) ----------------------------------------------------
 
