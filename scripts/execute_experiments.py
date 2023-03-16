@@ -4,6 +4,7 @@ import time
 import click
 import os
 
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
@@ -28,7 +29,7 @@ from wandb.keras import WandbCallback
 from utils import seed_everything
 
 TIMESTR: Final[str] = time.strftime("%Y%m%d%H%M")
-THRESH_TUNED: Final[float] = 0.7
+THRESH_TUNED: Final[float] = 0.5
 THRESH_PROGRESSIVE: Final[float] = 0.5
 THRESH_NOROUZZADEH: Final[float] = 0.9
 BACKBONE_TUNED: Final[str] = 'xception'
@@ -96,7 +97,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
         'num_classes': cfg['num_classes'],
-        'transfer_epochs': 1,  # cfg['transfer_epochs'],
+        'transfer_epochs': cfg['transfer_epochs'],
         'finetune_epochs': cfg['finetune_epochs'],
         'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
         'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
@@ -118,8 +119,8 @@ def main(repo_dir: str, experiment: str, random_seed: int):
 
     if experiment == 'passive':
 
-        thresholds = [0.1]
-        # thresholds = np.arange(0.1, 1, 0.2).round(2).tolist()
+        # thresholds = [0.1]
+        thresholds = np.arange(0.1, 1, 0.2).round(2).tolist()
         # details_ins_test: Dict = {}
         # details_ins_val: Dict = {}
 
