@@ -10,6 +10,7 @@ from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 import gc
 from typing import Dict, Final, List
+from numba import cuda
 from wildlifeml.data import subset_dataset
 from wildlifeml.training.trainer import WildlifeTrainer
 from wildlifeml.training.active import ActiveLearner
@@ -364,11 +365,13 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         trainer_pretraining = WildlifeTrainer(**trainer_args_pretraining)
         trainer_pretraining.finetune_callbacks = finetune_callbacks_pretraining + [
             keras.callbacks.ModelCheckpoint(
-                filepath=os.path.join(cfg['data_dir'], cfg['pretraining_ckpt']),
+                filepath=os.path.join(
+                    cfg['data_dir'], cfg['pretraining_ckpt'], str(random_seed)
+                ),
                 save_weights_only=True,
             )
         ]
-        tf.random.set_seed(cfg['random_state'])
+        seed_everything(random_seed)
         trainer_pretraining.fit(
             load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_train_thresh.pkl')),
             load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_val_thresh.pkl'))
@@ -434,6 +437,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 al_iterations = min(cfg['al_iterations'], len(batch_sizes) - 1)
 
             for i in range(al_iterations):
+                cuda.select_device(os.getenv('CUDA_VISIBLE_DEVICES')[0])
                 print(f'---> Starting AL iteration {i + 1}/{al_iterations + 1}')
                 keys_to_label = [
                     k for k, _ in load_csv(
@@ -454,6 +458,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 tf.keras.backend.clear_session()
                 tf.compat.v1.reset_default_graph()
                 gc.collect()
+                cuda.close()
 
     else:
         raise IOError('Unknown experiment')
