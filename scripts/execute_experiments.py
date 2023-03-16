@@ -447,19 +447,14 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 print('---> Supplied fresh labeled data')
                 seed_everything(random_seed)
                 active_learner.al_batch_size = batch_sizes[i + 1]
+                trainer = WildlifeTrainer(**args)
+                active_learner.set_trainer(trainer)
                 active_learner.run()
+
                 tf.keras.backend.clear_session()
+                tf.compat.v1.reset_default_graph()
                 gc.collect()
 
-            results = load_pickle(active_learner.test_logfile_path)
-            results.update({'batch_sizes': batch_sizes})
-            save_as_pickle(
-                results,
-                os.path.join(
-                    cfg['result_dir'],
-                    f'{TIMESTR}_results_active_{mode}.pkl'
-                )
-            )
     else:
         raise IOError('Unknown experiment')
 
