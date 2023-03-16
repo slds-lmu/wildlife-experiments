@@ -148,15 +148,6 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             dataset_val_thresh = subset_dataset(dataset_is_val, keys_is_val)
             dataset_test_thresh = subset_dataset(dataset_is_test, dataset_is_test.keys)
 
-            # for ds in [dataset_train_thresh, dataset_val_thresh, dataset_test_thresh]:
-            #     labels = [ds.label_dict[map_bbox_to_img(k)] for k in ds.keys]
-            #     cnt = dict(collections.Counter(labels))
-            #     total_count = sum(cnt.values())
-            #     relative = {}
-            #     for key in sorted(list(cnt.keys())):
-            #         relative[key] = round(cnt[key] / total_count, 2)
-            #     print(relative)
-
             if threshold == 0.:
                 # Effectively omit MD from pipeline
                 dataset_train_thresh.do_cropping = False
@@ -260,7 +251,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
 
     # WITH AL (WARM- AND COLDSTART) ----------------------------------------------------
 
-    elif experiment == 'active':
+    elif experiment == 'active_prep':
 
         # Prepare OOS data
         _, keys_all_nonempty = separate_empties(
@@ -280,27 +271,98 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             list(set(dataset_oos_trainval.keys).intersection(set(keys_all_nonempty)))
         )
 
+        # Prepare training
+        transfer_callbacks_optimal = [
+            EarlyStopping(
+                monitor=cfg['earlystop_metric'], patience=2 * cfg['transfer_patience'],
+            ),
+            ReduceLROnPlateau(
+                monitor=cfg['earlystop_metric'],
+                patience=cfg['transfer_patience'],
+                factor=0.1,
+                verbose=1,
+            ),
+        ]
+        finetune_callbacks_optimal = [
+            EarlyStopping(
+                monitor=cfg['earlystop_metric'],
+                patience=2 * cfg['finetune_patience'],
+            ),
+            ReduceLROnPlateau(
+                monitor=cfg['earlystop_metric'],
+                patience=cfg['finetune_patience'],
+                factor=0.1,
+                verbose=1,
+            )
+        ]
+        wandb.init(project='wildlilfe', tags=['active', 'optimal'])
+        transfer_callbacks_optimal.append(
+            WandbCallback(save_code=True, save_model=False)
+        )
+        trainer_args_optimal: Dict = dict(
+            {
+                'transfer_callbacks': transfer_callbacks_optimal,
+                'finetune_callbacks': finetune_callbacks_optimal
+            },
+            **trainer_args
+        )
         # Get perf upper limit by training on all data
-        print('---> Training on out-of-sample data')
-        trainer_al_optimal = WildlifeTrainer(**trainer_args)
-        tf.random.set_seed(cfg['random_state'])
-        trainer_al_optimal.fit(
+        trainer_optimal = WildlifeTrainer(**trainer_args_optimal)
+        print('---> Training on wildlife data')
+        trainer_optimal.fit(
             train_dataset=dataset_oos_train, val_dataset=dataset_oos_val
         )
+        wandb.finish()
         print('---> Evaluating on out-of-sample data')
-        evaluator_al_optimal = Evaluator(
-            dataset=dataset_oos_test, conf_threshold=THRESH_TUNED, **evaluator_args
+        evaluator = Evaluator(
+            dataset=ds, conf_threshold=float(THRESH_TUNED), **evaluator_args,
         )
-        evaluator_al_optimal.evaluate(trainer_al_optimal)
-        details_al_optimal = evaluator_al_optimal.get_details()
+        evaluator.evaluate(trainer_optimal)
         save_as_pickle(
-            details_al_optimal,
-            os.path.join(cfg['result_dir'], f'{TIMESTR}_results_active_optimal.pkl')
+            evaluator.get_details(),
+            os.path.join(
+                cfg['result_dir'],
+                f'{TIMESTR}_results_active_optimal_{random_seed}.pkl'
+            )
         )
 
         # Pre-train for warm start
-        trainer_pretraining = WildlifeTrainer(**trainer_args)
-        trainer_pretraining.finetune_callbacks = finetune_callbacks + [
+        transfer_callbacks_pretraining = [
+            EarlyStopping(
+                monitor=cfg['earlystop_metric'], patience=2 * cfg['transfer_patience'],
+            ),
+            ReduceLROnPlateau(
+                monitor=cfg['earlystop_metric'],
+                patience=cfg['transfer_patience'],
+                factor=0.1,
+                verbose=1,
+            ),
+        ]
+        finetune_callbacks_pretraining = [
+            EarlyStopping(
+                monitor=cfg['earlystop_metric'],
+                patience=2 * cfg['finetune_patience'],
+            ),
+            ReduceLROnPlateau(
+                monitor=cfg['earlystop_metric'],
+                patience=cfg['finetune_patience'],
+                factor=0.1,
+                verbose=1,
+            )
+        ]
+        wandb.init(project='wildlilfe', tags=['active', 'pretraining'])
+        transfer_callbacks_pretraining.append(
+            WandbCallback(save_code=True, save_model=False)
+        )
+        trainer_args_pretraining: Dict = dict(
+            {
+                'transfer_callbacks': transfer_callbacks_pretraining,
+                'finetune_callbacks': finetune_callbacks_pretraining
+            },
+            **trainer_args
+        )
+        trainer_pretraining = WildlifeTrainer(**trainer_args_pretraining)
+        trainer_pretraining.finetune_callbacks = finetune_callbacks_pretraining + [
             keras.callbacks.ModelCheckpoint(
                 filepath=os.path.join(cfg['data_dir'], cfg['pretraining_ckpt']),
                 save_weights_only=True,
@@ -312,8 +374,10 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_val_thresh.pkl'))
         )
 
+    elif experiment == 'active_exec':
+
         trainer_args['num_workers'] = 1  # avoid overload due to TF multi-processing
-        trainer_args_pretraining: Dict = dict(
+        trainer_args_warmstart: Dict = dict(
             {
                 'pretraining_checkpoint': os.path.join(
                     cfg['data_dir'], cfg['pretraining_ckpt']
@@ -331,9 +395,11 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         batch_sizes = init_rep * init_sizes + n_max_batches * [1024] + [size_last_batch]
 
         for args, mode in zip(
-                [trainer_args_pretraining, trainer_args], ['warmstart', 'coldstart']
-                # [trainer_args], ['coldstart']
+                # [trainer_args_warmstart, trainer_args], ['warmstart', 'coldstart']
+                [trainer_args], ['coldstart']
         ):
+            result_dir = os.path.join(cfg['result_dir'], mode, str(random_seed))
+            os.makedirs(result_dir, exist_ok=True)
             trainer = WildlifeTrainer(**args)
             active_learner = ActiveLearner(
                 trainer=trainer,
@@ -344,11 +410,9 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 train_size=cfg['splits'][0],
                 conf_threshold=THRESH_TUNED,
                 test_dataset=dataset_oos_test,
-                test_logfile_path=os.path.join(
-                    cfg['result_dir'], cfg['test_logfile'] + f'_{mode}.pkl'
-                ),
+                test_logfile_path=result_dir,
                 acq_logfile_path=os.path.join(
-                    cfg['result_dir'], 'acq_logfile_' + f'{mode}.json'
+                    cfg['result_dir'], 'acq_logfile_' + f'{mode}_{random_seed}.json'
                 ),
                 meta_dict=stations_dict,
                 active_directory=cfg['active_dir'],
@@ -359,7 +423,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             print('---> Running initial AL iteration')
             if os.path.exists(os.path.join(cfg['active_dir'], '.activecache.json')):
                 os.remove(os.path.join(cfg['active_dir'], '.activecache.json'))
-            tf.random.set_seed(cfg['random_state'])
+            seed_everything(random_seed)
             active_learner.run()
             active_learner.do_fresh_start = False
 
@@ -381,7 +445,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                     os.path.join(cfg['active_dir'], 'active_labels.csv')
                 )
                 print('---> Supplied fresh labeled data')
-                tf.random.set_seed(cfg['random_state'])
+                seed_everything(random_seed)
                 active_learner.al_batch_size = batch_sizes[i + 1]
                 active_learner.run()
                 tf.keras.backend.clear_session()
