@@ -380,13 +380,42 @@ def main(repo_dir: str, experiment: str, random_seed: int):
     elif experiment == 'active_exec':
 
         trainer_args['num_workers'] = 1  # avoid overload due to TF multi-processing
+        trainer_args_coldstart: Dict = dict(
+            {
+                'transfer_callbacks': [
+                    EarlyStopping(
+                        monitor=cfg['earlystop_metric'],
+                        patience=2 * cfg['transfer_patience'],
+                    ),
+                    ReduceLROnPlateau(
+                        monitor=cfg['earlystop_metric'],
+                        patience=cfg['transfer_patience'],
+                        factor=0.1,
+                        verbose=1,
+                    ),
+                ],
+                'finetune_callbacks': [
+                    EarlyStopping(
+                        monitor=cfg['earlystop_metric'],
+                        patience=2 * cfg['finetune_patience'],
+                    ),
+                    ReduceLROnPlateau(
+                        monitor=cfg['earlystop_metric'],
+                        patience=cfg['finetune_patience'],
+                        factor=0.1,
+                        verbose=1,
+                    )
+                ]
+            },
+            **trainer_args
+        )
         trainer_args_warmstart: Dict = dict(
             {
                 'pretraining_checkpoint': os.path.join(
                     cfg['data_dir'], cfg['pretraining_ckpt']
                 )
             },
-            **trainer_args
+            **trainer_args_coldstart
         )
         # Compute batch sizes
         n_obs = len(dataset_oos_trainval.keys)
@@ -399,11 +428,10 @@ def main(repo_dir: str, experiment: str, random_seed: int):
 
         for args, mode in zip(
                 # [trainer_args_warmstart, trainer_args], ['warmstart', 'coldstart']
-                [trainer_args], ['coldstart']
+                [trainer_args_coldstart], ['coldstart']
         ):
             result_dir = os.path.join(cfg['result_dir'], mode, str(random_seed))
             os.makedirs(result_dir, exist_ok=True)
-            breakpoint()
             trainer = WildlifeTrainer(**args)
             active_learner = ActiveLearner(
                 trainer=trainer,
