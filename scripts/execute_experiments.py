@@ -443,9 +443,9 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 conf_threshold=THRESH_TUNED,
                 test_dataset=dataset_oos_test,
                 test_logfile_path=result_dir,
-                acq_logfile_path=os.path.join(
-                    cfg['result_dir'], 'acq_logfile_' + f'{mode}_{random_seed}.json'
-                ),
+                # acq_logfile_path=os.path.join(
+                #     cfg['result_dir'], 'acq_logfile_' + f'{mode}_{random_seed}.json'
+                # ),
                 meta_dict=stations_dict,
                 active_directory=cfg['active_dir'],
                 state_cache=os.path.join(cfg['active_dir'], '.activecache.json'),
