@@ -252,7 +252,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
 
     # WITH AL (WARM- AND COLDSTART) ----------------------------------------------------
 
-    elif experiment == 'active_prep':
+    elif experiment == 'active_opt':
 
         # Prepare OOS data
         _, keys_all_nonempty = separate_empties(
@@ -327,6 +327,8 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             )
         )
 
+    elif experiment == 'active_pre':
+
         # Pre-train for warm start
         transfer_callbacks_pretraining = [
             EarlyStopping(
@@ -355,6 +357,21 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         transfer_callbacks_pretraining.append(
             WandbCallback(save_code=True, save_model=False)
         )
+        ckpt_dir = os.path.join(
+            cfg['data_dir'], cfg['pretraining_ckpt'], str(random_seed)
+        )
+        os.makedirs(ckpt_dir, exist_ok=True)
+        finetune_callbacks_pretraining.append(
+            [
+                keras.callbacks.ModelCheckpoint(
+                    filepath=os.path.join(ckpt_dir, 'ckpt.hdf5'),
+                    monitor=cfg['earlystop_metric'],
+                    mode='min',
+                    save_weights_only=True,
+                    save_best_only=True,
+                )
+            ]
+        )
         trainer_args_pretraining: Dict = dict(
             {
                 'transfer_callbacks': transfer_callbacks_pretraining,
@@ -363,14 +380,6 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             **trainer_args
         )
         trainer_pretraining = WildlifeTrainer(**trainer_args_pretraining)
-        trainer_pretraining.finetune_callbacks = finetune_callbacks_pretraining + [
-            keras.callbacks.ModelCheckpoint(
-                filepath=os.path.join(
-                    cfg['data_dir'], cfg['pretraining_ckpt'], str(random_seed)
-                ),
-                save_weights_only=True,
-            )
-        ]
         seed_everything(random_seed)
         trainer_pretraining.fit(
             load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_train_thresh.pkl')),
@@ -468,7 +477,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             for i in range(al_iterations):
                 tf.keras.backend.clear_session()
                 tf.compat.v1.reset_default_graph()
-                cuda.select_device(0)  # we only use 1 GPU, adapt if using multiple
+                # cuda.select_device(0)  # we only use 1 GPU, adapt if using multiple
 
                 print(f'---> Starting AL iteration {i + 1}/{al_iterations + 1}')
                 keys_to_label = [
@@ -488,7 +497,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 active_learner.run()
 
                 gc.collect()
-                cuda.close()
+                # cuda.close()
 
     else:
         raise IOError('Unknown experiment')
