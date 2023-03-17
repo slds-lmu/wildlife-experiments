@@ -437,7 +437,11 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 al_iterations = min(cfg['al_iterations'], len(batch_sizes) - 1)
 
             for i in range(al_iterations):
+                tf.keras.backend.clear_session()
+                tf.compat.v1.reset_default_graph()
+                breakpoint()
                 cuda.select_device(os.getenv('CUDA_VISIBLE_DEVICES')[0])
+                
                 print(f'---> Starting AL iteration {i + 1}/{al_iterations + 1}')
                 keys_to_label = [
                     k for k, _ in load_csv(
@@ -455,8 +459,6 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 active_learner.set_trainer(trainer)
                 active_learner.run()
 
-                tf.keras.backend.clear_session()
-                tf.compat.v1.reset_default_graph()
                 gc.collect()
                 cuda.close()
 
