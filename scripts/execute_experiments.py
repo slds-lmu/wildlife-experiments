@@ -423,7 +423,10 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         trainer_args_warmstart: Dict = dict(
             {
                 'pretraining_checkpoint': os.path.join(
-                    cfg['data_dir'], cfg['pretraining_ckpt']
+                    cfg['data_dir'],
+                    cfg['pretraining_ckpt'],
+                    str(random_seed),
+                    'ckpt.hdf5'
                 )
             },
             **trainer_args_coldstart
