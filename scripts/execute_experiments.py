@@ -361,17 +361,19 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             cfg['data_dir'], cfg['pretraining_ckpt'], str(random_seed)
         )
         os.makedirs(ckpt_dir, exist_ok=True)
-        finetune_callbacks_pretraining.append(
-            [
-                keras.callbacks.ModelCheckpoint(
-                    filepath=os.path.join(ckpt_dir, 'ckpt.hdf5'),
-                    monitor=cfg['earlystop_metric'],
-                    mode='min',
-                    save_weights_only=True,
-                    save_best_only=True,
-                )
-            ]
-        )
+        ckpt_callback = [
+            keras.callbacks.ModelCheckpoint(
+                filepath=os.path.join(ckpt_dir, 'ckpt.hdf5'),
+                monitor=cfg['earlystop_metric'],
+                mode='min',
+                save_weights_only=True,
+                save_best_only=True,
+            )
+        ]
+        if FTLAYERS_TUNED == 0 or cfg['finetune_epochs'] == 0:
+            transfer_callbacks_pretraining.append(ckpt_callback)
+        else:
+            finetune_callbacks_pretraining.append(ckpt_callback)
         trainer_args_pretraining: Dict = dict(
             {
                 'transfer_callbacks': transfer_callbacks_pretraining,
