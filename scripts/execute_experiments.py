@@ -403,6 +403,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         ):
             result_dir = os.path.join(cfg['result_dir'], mode, str(random_seed))
             os.makedirs(result_dir, exist_ok=True)
+            breakpoint()
             trainer = WildlifeTrainer(**args)
             active_learner = ActiveLearner(
                 trainer=trainer,
