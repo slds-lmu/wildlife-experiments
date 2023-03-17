@@ -439,9 +439,8 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             for i in range(al_iterations):
                 tf.keras.backend.clear_session()
                 tf.compat.v1.reset_default_graph()
-                breakpoint()
-                cuda.select_device(os.getenv('CUDA_VISIBLE_DEVICES')[0])
-                
+                cuda.select_device(0)  # we only use 1 GPU, adapt if using multiple
+
                 print(f'---> Starting AL iteration {i + 1}/{al_iterations + 1}')
                 keys_to_label = [
                     k for k, _ in load_csv(
