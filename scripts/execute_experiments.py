@@ -469,7 +469,6 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         size_last_batch = n_obs - (n_init_batches + n_max_batches * 1024)
         init_batches = list(chain.from_iterable([[x] * 5 for x in init_sizes]))
         batch_sizes = init_batches + n_max_batches * [1024] + [size_last_batch]
-        breakpoint()
 
         for args, mode in zip(
                 # [trainer_args_warmstart, trainer_args], ['warmstart', 'coldstart']
@@ -505,8 +504,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             active_learner.do_fresh_start = False
 
             # BUGFIXING
-            breakpoint()
-            batch_sizes = [512, 512, 512]
+            batch_sizes = [2**11, 2**12, 2**14]
             # Set AL iterations to maximum or as specified in config
             if cfg['al_iterations'] < 0:
                 al_iterations = len(batch_sizes) - 1
