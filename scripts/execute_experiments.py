@@ -392,74 +392,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         wandb.finish()
 
     elif experiment == 'active_exec':
-        # trainer_args['num_workers'] = 1  # avoid overload due to TF multi-processing
-        trainer_args_coldstart: Dict = dict(
-            {
-                'transfer_callbacks': [
-                    EarlyStopping(
-                        monitor=cfg['earlystop_metric'],
-                        patience=cfg['transfer_patience'],
-                        min_delta=0.005,
-                    ),
-                    ReduceLROnPlateau(
-                        monitor=cfg['earlystop_metric'],
-                        patience=cfg['transfer_patience'],
-                        factor=0.1,
-                        min_delta=0.01,
-                    ),
-                ],
-                'finetune_callbacks': [
-                    EarlyStopping(
-                        monitor=cfg['earlystop_metric'],
-                        patience=cfg['finetune_patience'],
-                        min_delta=0.005,
-                    ),
-                    ReduceLROnPlateau(
-                        monitor=cfg['earlystop_metric'],
-                        patience=cfg['finetune_patience'],
-                        factor=0.1,
-                        verbose=1,
-                        min_delta=0.01,
-                    ),
-                ]
-            },
-            **trainer_args
-        )
-        trainer_args_warmstart: Dict = dict(
-            {
-                'transfer_callbacks': [
-                    EarlyStopping(
-                        monitor=cfg['earlystop_metric'],
-                        patience=2 * cfg['transfer_patience'],
-                    ),
-                    ReduceLROnPlateau(
-                        monitor=cfg['earlystop_metric'],
-                        patience=cfg['transfer_patience'],
-                        factor=0.1,
-                        verbose=1,
-                    ),
-                ],
-                'finetune_callbacks': [
-                    EarlyStopping(
-                        monitor=cfg['earlystop_metric'],
-                        patience=2 * cfg['finetune_patience'],
-                    ),
-                    ReduceLROnPlateau(
-                        monitor=cfg['earlystop_metric'],
-                        patience=cfg['finetune_patience'],
-                        factor=0.1,
-                        verbose=1,
-                    ),
-                ],
-                'pretraining_checkpoint': os.path.join(
-                    cfg['data_dir'],
-                    cfg['pretraining_ckpt'],
-                    str(random_seed),
-                    'ckpt.hdf5'
-                )
-            },
-            **trainer_args
-        )
+
         # Compute batch sizes
         # TODO flexibilize
         n_obs = len(dataset_oos_trainval.keys)
@@ -471,15 +404,11 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         init_batches = [2**x for x in range(7, 14)]
         batch_sizes = init_batches + [n_obs - sum(init_batches)]
 
-        for args, mode in zip(
-                # [trainer_args_warmstart, trainer_args], ['warmstart', 'coldstart']
-                [trainer_args_coldstart], ['coldstart']
-        ):
+        for mode in ['coldstart']:  # ['warmstart', 'coldstart']:
             result_dir = os.path.join(cfg['result_dir'], mode, str(random_seed))
             os.makedirs(result_dir, exist_ok=True)
-            trainer = WildlifeTrainer(**args)
             active_learner = ActiveLearner(
-                trainer=trainer,
+                trainer=WildlifeTrainer(**trainer_args),
                 pool_dataset=dataset_oos_trainval,
                 label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
                 empty_class_id=empty_class_id,
@@ -511,9 +440,9 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 al_iterations = min(cfg['al_iterations'], len(batch_sizes) - 1)
 
             for i in range(al_iterations):
+
                 tf.keras.backend.clear_session()
                 tf.compat.v1.reset_default_graph()
-                # cuda.select_device(0)  # we only use 1 GPU, adapt if using multiple
 
                 print(f'---> Starting AL iteration {i + 1}/{al_iterations + 1}')
                 keys_to_label = [
@@ -528,17 +457,53 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 print('---> Supplied fresh labeled data')
                 seed_everything(random_seed)
                 active_learner.al_batch_size = batch_sizes[i + 1]
+
                 wandb.init(project='wildlilfe', tags=['active', f'iter_{i}'])
-                args['transfer_callbacks'].append(
-                    WandbCallback(save_code=True, save_model=False)
+                trainer_args_i: Dict = dict(
+                    {
+                        'transfer_callbacks': [
+                            EarlyStopping(
+                                monitor=cfg['earlystop_metric'],
+                                patience=2 * cfg['transfer_patience'],
+                            ),
+                            ReduceLROnPlateau(
+                                monitor=cfg['earlystop_metric'],
+                                patience=cfg['transfer_patience'],
+                                factor=0.1,
+                            ),
+                            WandbCallback(save_code=True, save_model=False)
+                        ],
+                        'finetune_callbacks': [
+                            EarlyStopping(
+                                monitor=cfg['earlystop_metric'],
+                                patience=2 * cfg['transfer_patience'],
+                            ),
+                            ReduceLROnPlateau(
+                                monitor=cfg['earlystop_metric'],
+                                patience=cfg['transfer_patience'],
+                                factor=0.1,
+                            ),
+                        ]
+                    },
+                    **trainer_args
                 )
-                trainer = WildlifeTrainer(**args)
-                active_learner.set_trainer(trainer)
+                if mode == 'warmstart':
+                    trainer_args_i.update(
+                        {
+                            'pretraining_checkpoint': os.path.join(
+                                cfg['data_dir'],
+                                cfg['pretraining_ckpt'],
+                                str(random_seed),
+                                'ckpt.hdf5'
+                            )
+                        }
+                    )
+
+                active_learner.set_trainer(WildlifeTrainer(**trainer_args_i))
                 active_learner.run()
 
                 wandb.finish()
                 gc.collect()
-                # cuda.close()
 
     else:
         raise IOError('Unknown experiment')
