@@ -102,8 +102,8 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         'num_classes': cfg['num_classes'],
         'transfer_epochs': cfg['transfer_epochs'],
         'finetune_epochs': cfg['finetune_epochs'],
-        'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
-        'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
+        # 'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
+        # 'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
         'finetune_layers': FTLAYERS_TUNED,
         'model_backbone': BACKBONE_TUNED,
         'num_workers': cfg['num_workers'],
@@ -205,7 +205,9 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             this_trainer_args: Dict = dict(
                 {
                     'transfer_callbacks': transfer_callbacks,
-                    'finetune_callbacks': finetune_callbacks
+                    'finetune_callbacks': finetune_callbacks,
+                    'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
+                    'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
                 },
                 **trainer_args
             )
@@ -305,7 +307,9 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         trainer_args_optimal: Dict = dict(
             {
                 'transfer_callbacks': transfer_callbacks_optimal,
-                'finetune_callbacks': finetune_callbacks_optimal
+                'finetune_callbacks': finetune_callbacks_optimal,
+                'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
+                'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
             },
             **trainer_args
         )
@@ -379,7 +383,9 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         trainer_args_pretraining: Dict = dict(
             {
                 'transfer_callbacks': transfer_callbacks_pretraining,
-                'finetune_callbacks': finetune_callbacks_pretraining
+                'finetune_callbacks': finetune_callbacks_pretraining,
+                'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
+                'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
             },
             **trainer_args
         )
@@ -483,7 +489,9 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                                 patience=cfg['transfer_patience'],
                                 factor=0.1,
                             ),
-                        ]
+                        ],
+                        'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
+                        'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
                     },
                     **trainer_args
                 )
