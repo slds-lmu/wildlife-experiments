@@ -465,7 +465,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         n_init_batches = sum([x * init_rep for x in init_sizes])
         n_max_batches = (n_obs - n_init_batches) // 1024
         size_last_batch = n_obs - (n_init_batches + n_max_batches * 1024)
-        batch_sizes = init_rep * init_sizes + n_max_batches * [1024] + [size_last_batch]
+        batch_sizes = [x * init_rep for x in init_sizes] + n_max_batches * [1024] + [size_last_batch]
 
         for args, mode in zip(
                 # [trainer_args_warmstart, trainer_args], ['warmstart', 'coldstart']
