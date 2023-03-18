@@ -387,11 +387,46 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_train_thresh.pkl')),
             load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_val_thresh.pkl'))
         )
+        wandb.finish()
 
     elif experiment == 'active_exec':
-
+        wandb.init(project='wildlilfe', tags=['active', 'execution'])
         trainer_args['num_workers'] = 1  # avoid overload due to TF multi-processing
         trainer_args_coldstart: Dict = dict(
+            {
+                'transfer_callbacks': [
+                    EarlyStopping(
+                        monitor=cfg['earlystop_metric'],
+                        patience=cfg['transfer_patience'],
+                        min_delta=0.005,
+                    ),
+                    ReduceLROnPlateau(
+                        monitor=cfg['earlystop_metric'],
+                        patience=cfg['transfer_patience'],
+                        factor=0.1,
+                        min_delta=0.01,
+                    ),
+                    WandbCallback(save_code=True, save_model=False)
+                ],
+                'finetune_callbacks': [
+                    EarlyStopping(
+                        monitor=cfg['earlystop_metric'],
+                        patience=cfg['finetune_patience'],
+                        min_delta=0.005,
+                    ),
+                    ReduceLROnPlateau(
+                        monitor=cfg['earlystop_metric'],
+                        patience=cfg['finetune_patience'],
+                        factor=0.1,
+                        verbose=1,
+                        min_delta=0.01,
+                    ),
+                    WandbCallback(save_code=True, save_model=False),
+                ]
+            },
+            **trainer_args
+        )
+        trainer_args_warmstart: Dict = dict(
             {
                 'transfer_callbacks': [
                     EarlyStopping(
@@ -404,6 +439,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                         factor=0.1,
                         verbose=1,
                     ),
+                    WandbCallback(save_code=True, save_model=False)
                 ],
                 'finetune_callbacks': [
                     EarlyStopping(
@@ -415,13 +451,9 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                         patience=cfg['finetune_patience'],
                         factor=0.1,
                         verbose=1,
-                    )
-                ]
-            },
-            **trainer_args
-        )
-        trainer_args_warmstart: Dict = dict(
-            {
+                    ),
+                    WandbCallback(save_code=True, save_model=False),
+                ],
                 'pretraining_checkpoint': os.path.join(
                     cfg['data_dir'],
                     cfg['pretraining_ckpt'],
@@ -429,7 +461,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                     'ckpt.hdf5'
                 )
             },
-            **trainer_args_coldstart
+            **trainer_args
         )
         # Compute batch sizes
         n_obs = len(dataset_oos_trainval.keys)
