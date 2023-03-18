@@ -390,8 +390,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         wandb.finish()
 
     elif experiment == 'active_exec':
-        wandb.init(project='wildlilfe', tags=['active', 'execution'])
-        trainer_args['num_workers'] = 1  # avoid overload due to TF multi-processing
+        # trainer_args['num_workers'] = 1  # avoid overload due to TF multi-processing
         trainer_args_coldstart: Dict = dict(
             {
                 'transfer_callbacks': [
@@ -531,6 +530,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 print('---> Supplied fresh labeled data')
                 seed_everything(random_seed)
                 active_learner.al_batch_size = batch_sizes[i + 1]
+                wandb.init(project='wildlilfe', tags=['active', f'iter_{i}'])
                 trainer = WildlifeTrainer(**args)
                 active_learner.set_trainer(trainer)
                 active_learner.run()
