@@ -501,6 +501,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             active_learner.do_fresh_start = False
 
             # BUGFIXING
+            breakpoint()
             batch_sizes = [512, 512, 512]
             # Set AL iterations to maximum or as specified in config
             if cfg['al_iterations'] < 0:
