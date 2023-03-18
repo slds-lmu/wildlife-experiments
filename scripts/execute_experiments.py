@@ -516,7 +516,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             for i in range(al_iterations):
                 tf.keras.backend.clear_session()
                 tf.compat.v1.reset_default_graph()
-                cuda.select_device(0)  # we only use 1 GPU, adapt if using multiple
+                # cuda.select_device(0)  # we only use 1 GPU, adapt if using multiple
 
                 print(f'---> Starting AL iteration {i + 1}/{al_iterations + 1}')
                 keys_to_label = [
@@ -535,8 +535,9 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 active_learner.set_trainer(trainer)
                 active_learner.run()
 
+                wandb.finish()
                 gc.collect()
-                cuda.close()
+                # cuda.close()
 
     else:
         raise IOError('Unknown experiment')
