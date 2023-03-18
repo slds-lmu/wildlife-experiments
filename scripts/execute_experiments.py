@@ -411,10 +411,20 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         batch_sizes = init_batches + [n_obs - sum(init_batches)]
 
         for mode in ['coldstart']:  # ['warmstart', 'coldstart']:
+
             result_dir = os.path.join(cfg['result_dir'], mode, str(random_seed))
             os.makedirs(result_dir, exist_ok=True)
+
+            trainer_args_0: Dict = dict(
+                {
+                    'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
+                    'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
+                },
+                **trainer_args
+            )
+
             active_learner = ActiveLearner(
-                trainer=WildlifeTrainer(**trainer_args),
+                trainer=WildlifeTrainer(**trainer_args_0),
                 pool_dataset=dataset_oos_trainval,
                 label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
                 empty_class_id=empty_class_id,
