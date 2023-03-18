@@ -1,6 +1,8 @@
 """In-sample results."""
 
 import time
+from itertools import chain
+
 import click
 import os
 
@@ -465,7 +467,9 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         n_init_batches = sum([x * init_rep for x in init_sizes])
         n_max_batches = (n_obs - n_init_batches) // 1024
         size_last_batch = n_obs - (n_init_batches + n_max_batches * 1024)
-        batch_sizes = [x * init_rep for x in init_sizes] + n_max_batches * [1024] + [size_last_batch]
+        init_batches = list(chain.from_iterable([[x] * 5 for x in init_sizes]))
+        batch_sizes = init_batches + n_max_batches * [1024] + [size_last_batch]
+        breakpoint()
 
         for args, mode in zip(
                 # [trainer_args_warmstart, trainer_args], ['warmstart', 'coldstart']
