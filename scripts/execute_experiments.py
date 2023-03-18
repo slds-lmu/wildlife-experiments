@@ -405,7 +405,6 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                         factor=0.1,
                         min_delta=0.01,
                     ),
-                    WandbCallback(save_code=True, save_model=False)
                 ],
                 'finetune_callbacks': [
                     EarlyStopping(
@@ -420,7 +419,6 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                         verbose=1,
                         min_delta=0.01,
                     ),
-                    WandbCallback(save_code=True, save_model=False),
                 ]
             },
             **trainer_args
@@ -438,7 +436,6 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                         factor=0.1,
                         verbose=1,
                     ),
-                    WandbCallback(save_code=True, save_model=False)
                 ],
                 'finetune_callbacks': [
                     EarlyStopping(
@@ -451,7 +448,6 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                         factor=0.1,
                         verbose=1,
                     ),
-                    WandbCallback(save_code=True, save_model=False),
                 ],
                 'pretraining_checkpoint': os.path.join(
                     cfg['data_dir'],
@@ -531,6 +527,9 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 seed_everything(random_seed)
                 active_learner.al_batch_size = batch_sizes[i + 1]
                 wandb.init(project='wildlilfe', tags=['active', f'iter_{i}'])
+                args['transfer_callbacks'].append(
+                    WandbCallback(save_code=True, save_model=False)
+                )
                 trainer = WildlifeTrainer(**args)
                 active_learner.set_trainer(trainer)
                 active_learner.run()
