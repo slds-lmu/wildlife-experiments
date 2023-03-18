@@ -461,14 +461,15 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             **trainer_args
         )
         # Compute batch sizes
+        # TODO flexibilize
         n_obs = len(dataset_oos_trainval.keys)
-        init_sizes: Final[List] = [128, 256, 512]
-        init_rep: Final[int] = 5
-        n_init_batches = sum([x * init_rep for x in init_sizes])
-        n_max_batches = (n_obs - n_init_batches) // 1024
-        size_last_batch = n_obs - (n_init_batches + n_max_batches * 1024)
-        init_batches = list(chain.from_iterable([[x] * 5 for x in init_sizes]))
-        batch_sizes = init_batches + n_max_batches * [1024] + [size_last_batch]
+        # init_sizes: Final[List] = [128, 256, 512]
+        # init_rep: Final[int] = 3
+        # n_init_batches = sum([x * init_rep for x in init_sizes])
+        # n_max_batches = (n_obs - n_init_batches) // 1024
+        # size_last_batch = n_obs - (n_init_batches + n_max_batches * 1024)
+        init_batches = [2**x for x in range(7, 14)]
+        batch_sizes = init_batches + [n_obs - sum(init_batches)]
 
         for args, mode in zip(
                 # [trainer_args_warmstart, trainer_args], ['warmstart', 'coldstart']
@@ -503,8 +504,6 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             active_learner.run()
             active_learner.do_fresh_start = False
 
-            # BUGFIXING
-            batch_sizes = [2**11, 2**12, 2**14]
             # Set AL iterations to maximum or as specified in config
             if cfg['al_iterations'] < 0:
                 al_iterations = len(batch_sizes) - 1
