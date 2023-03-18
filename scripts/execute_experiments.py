@@ -473,6 +473,8 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             active_learner.run()
             active_learner.do_fresh_start = False
 
+            # BUGFIXING
+            batch_sizes = [512, 512, 512]
             # Set AL iterations to maximum or as specified in config
             if cfg['al_iterations'] < 0:
                 al_iterations = len(batch_sizes) - 1
@@ -482,7 +484,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
             for i in range(al_iterations):
                 tf.keras.backend.clear_session()
                 tf.compat.v1.reset_default_graph()
-                # cuda.select_device(0)  # we only use 1 GPU, adapt if using multiple
+                cuda.select_device(0)  # we only use 1 GPU, adapt if using multiple
 
                 print(f'---> Starting AL iteration {i + 1}/{al_iterations + 1}')
                 keys_to_label = [
@@ -502,7 +504,7 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 active_learner.run()
 
                 gc.collect()
-                # cuda.close()
+                cuda.close()
 
     else:
         raise IOError('Unknown experiment')
