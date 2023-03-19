@@ -27,7 +27,7 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import wandb
 from wandb.keras import WandbCallback
 
-from utils import seed_everything
+from utils import seed_everything, MyEarlyStopping
 
 TIMESTR: Final[str] = time.strftime("%Y%m%d%H%M")
 THRESH_TUNED: Final[float] = 0.5
@@ -485,7 +485,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 trainer_args_i: Dict = dict(
                     {
                         'transfer_callbacks': [
-                            EarlyStopping(
+                            MyEarlyStopping(
                                 monitor='val_loss',
                                 mode='min',
                                 patience=3 * cfg['transfer_patience'],
