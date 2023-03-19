@@ -492,7 +492,6 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                                 min_delta=10**-5,
                                 baseline=0.,
                                 verbose=True,
-                                restore_best_weights=True,
                             ),
                             ReduceLROnPlateau(
                                 monitor=cfg['earlystop_metric'],
