@@ -417,7 +417,9 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
 
         for mode in ['coldstart']:  # ['warmstart', 'coldstart']:
 
-            result_dir = os.path.join(cfg['result_dir'], mode, str(random_seed))
+            result_dir = os.path.join(
+                cfg['result_dir'], mode, acq_criterion, str(random_seed)
+            )
             os.makedirs(result_dir, exist_ok=True)
 
             trainer_args_0: Dict = dict(
@@ -484,8 +486,11 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                     {
                         'transfer_callbacks': [
                             EarlyStopping(
-                                monitor=cfg['earlystop_metric'],
+                                monitor='val_loss',
+                                mode='min',
                                 patience=3 * cfg['transfer_patience'],
+                                min_delta=10**-5,
+                                baseline=0.,
                                 verbose=True,
                                 restore_best_weights=True,
                             ),
