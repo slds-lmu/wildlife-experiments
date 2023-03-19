@@ -488,7 +488,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                             MyEarlyStopping(
                                 monitor='val_loss',
                                 mode='min',
-                                patience=3 * cfg['transfer_patience'],
+                                patience=2 * cfg['transfer_patience'],
                                 min_delta=10**-5,
                                 baseline=0.,
                                 verbose=True,
