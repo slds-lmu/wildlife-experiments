@@ -407,8 +407,10 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         # n_init_batches = sum([x * init_rep for x in init_sizes])
         # n_max_batches = (n_obs - n_init_batches) // 1024
         # size_last_batch = n_obs - (n_init_batches + n_max_batches * 1024)
-        init_batches = [2**x for x in range(7, 14)]
-        batch_sizes = init_batches + [n_obs - sum(init_batches)]
+        init_batches: Final[List] = [2**x for x in range(7, 14)]
+        batch_sizes: Final[List] = init_batches + [n_obs - sum(init_batches)]
+
+        acq_criterion: Final[str] = 'entropy'
 
         for mode in ['coldstart']:  # ['warmstart', 'coldstart']:
 
@@ -428,14 +430,11 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 pool_dataset=dataset_oos_trainval,
                 label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
                 empty_class_id=empty_class_id,
-                acquisitor_name='entropy',
+                acquisitor_name=acq_criterion,
                 train_size=cfg['splits'][0],
                 conf_threshold=THRESH_TUNED,
                 test_dataset=dataset_oos_test,
                 test_logfile_path=result_dir,
-                # acq_logfile_path=os.path.join(
-                #     cfg['result_dir'], 'acq_logfile_' + f'{mode}_{random_seed}.json'
-                # ),
                 meta_dict=stations_dict,
                 active_directory=cfg['active_dir'],
                 state_cache=os.path.join(cfg['active_dir'], '.activecache.json'),
@@ -474,13 +473,18 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                 seed_everything(random_seed)
                 active_learner.al_batch_size = batch_sizes[i + 1]
 
-                wandb.init(project='wildlilfe', tags=['active', f'iter_{i}'])
+                wandb.init(
+                    project='wildlilfe',
+                    tags=['active', f'iter_{i}', mode, acq_criterion]
+                )
                 trainer_args_i: Dict = dict(
                     {
                         'transfer_callbacks': [
                             EarlyStopping(
                                 monitor=cfg['earlystop_metric'],
-                                patience=2 * cfg['transfer_patience'],
+                                patience=3 * cfg['transfer_patience'],
+                                verbose=True,
+                                restore_best_weights=True,
                             ),
                             ReduceLROnPlateau(
                                 monitor=cfg['earlystop_metric'],
@@ -492,11 +496,11 @@ def main(repo_dir: str, experiment: str, random_seed: int):
                         'finetune_callbacks': [
                             EarlyStopping(
                                 monitor=cfg['earlystop_metric'],
-                                patience=2 * cfg['transfer_patience'],
+                                patience=3 * cfg['finetune_patience'],
                             ),
                             ReduceLROnPlateau(
                                 monitor=cfg['earlystop_metric'],
-                                patience=cfg['transfer_patience'],
+                                patience=cfg['finetune_patience'],
                                 factor=0.1,
                             ),
                         ],
