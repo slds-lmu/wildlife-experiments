@@ -489,7 +489,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                                 monitor='val_loss',
                                 mode='min',
                                 patience=2 * cfg['transfer_patience'],
-                                min_delta=10**-5,
+                                min_delta=10**-2,
                                 baseline=0.,
                                 verbose=True,
                             ),

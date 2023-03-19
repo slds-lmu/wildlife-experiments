@@ -34,7 +34,13 @@ def seed_everything(seed: int) -> None:
     tf.compat.v1.keras.backend.set_session(sess)
 
 
+# https://stackoverflow.com/questions/53500047/stop-training-in-keras-when-accuracy-is-already-1-0
+# Problem: loss starts low, picks up briefly, then starts decreasing --> if it doesn't
+# move below the initial value in <patience> epochs, training stops (despite steady
+# improvement after initial zig-zagging). Newer TF versions have option to set number of
+# burn-in epochs and monitor improvement only after these, but not available here.
 class MyEarlyStopping(EarlyStopping):
+    """ES such that patience epochs only count when baseline is met."""
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
         self.baseline_attained = False
