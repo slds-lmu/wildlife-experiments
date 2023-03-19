@@ -1,7 +1,6 @@
 """In-sample results."""
 
 import time
-from itertools import chain
 
 import click
 import os
@@ -12,7 +11,6 @@ from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 import gc
 from typing import Dict, Final, List
-from numba import cuda
 from wildlifeml.data import subset_dataset
 from wildlifeml.training.trainer import WildlifeTrainer
 from wildlifeml.training.active import ActiveLearner
@@ -47,7 +45,14 @@ FTLAYERS_TUNED: Final[int] = 0
 @click.option(
     '--random_seed', '-s', help='Random seed.', required=True
 )
-def main(repo_dir: str, experiment: str, random_seed: int):
+@click.option(
+    '--acq_criterion',
+    '-a',
+    help='AL acquisition criterion.',
+    required=False,
+    default='entropy'
+)
+def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
 
     # ----------------------------------------------------------------------------------
     # GLOBAL ---------------------------------------------------------------------------
@@ -409,8 +414,6 @@ def main(repo_dir: str, experiment: str, random_seed: int):
         # size_last_batch = n_obs - (n_init_batches + n_max_batches * 1024)
         init_batches: Final[List] = [2**x for x in range(7, 14)]
         batch_sizes: Final[List] = init_batches + [n_obs - sum(init_batches)]
-
-        acq_criterion: Final[str] = 'entropy'
 
         for mode in ['coldstart']:  # ['warmstart', 'coldstart']:
 
