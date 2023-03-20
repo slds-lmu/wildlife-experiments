@@ -105,7 +105,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
         'num_classes': cfg['num_classes'],
-        'transfer_epochs': cfg['transfer_epochs'],
+        'transfer_epochs': 2,  # cfg['transfer_epochs'],
         'finetune_epochs': cfg['finetune_epochs'],
         'finetune_layers': FTLAYERS_TUNED,
         'model_backbone': BACKBONE_TUNED,
@@ -464,12 +464,12 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
             else:
                 al_iterations = min(cfg['al_iterations'], len(batch_sizes))
 
-            for i in range(al_iterations)[1:]:
+            for i in range(al_iterations):
 
                 tf.keras.backend.clear_session()
                 tf.compat.v1.reset_default_graph()
 
-                print(f'---> Starting AL iteration {i}/{al_iterations - 1}')
+                print(f'---> Starting AL iteration {i + 1}/{al_iterations}')
                 keys_to_label = [k for k, _ in load_csv(active_labels_file)]
                 save_as_csv(
                     [(k, v) for k, v in label_dict.items() if k in keys_to_label],
@@ -491,7 +491,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                                 mode='min',
                                 patience=2 * cfg['transfer_patience'],
                                 start_from_epoch=10,
-                                min_delta=0.01,
+                                min_delta=0.02,
                             ),
                             ReduceLROnPlateau(
                                 monitor=cfg['earlystop_metric'],
