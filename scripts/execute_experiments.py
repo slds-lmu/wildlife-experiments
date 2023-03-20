@@ -489,9 +489,10 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                                 monitor='val_loss',
                                 mode='min',
                                 patience=2 * cfg['transfer_patience'],
-                                min_delta=10**-2,
+                                min_delta=0.5,
                                 baseline=0.,
                                 verbose=True,
+                                restore_best_weights=True,
                             ),
                             ReduceLROnPlateau(
                                 monitor=cfg['earlystop_metric'],
