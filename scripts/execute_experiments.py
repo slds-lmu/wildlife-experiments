@@ -418,6 +418,12 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 cfg['result_dir'], mode, acq_criterion, str(random_seed)
             )
             os.makedirs(result_dir, exist_ok=True)
+            cache_file = os.path.join(
+                cfg['active_dir'], str(random_seed), '.activecache.json'
+            )
+            active_labels_file = os.path.join(
+                cfg['active_dir'], str(random_seed), 'active_labels.csv'
+            )
 
             trainer_args_0: Dict = dict(
                 {
@@ -430,7 +436,9 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
             active_learner = ActiveLearner(
                 trainer=WildlifeTrainer(**trainer_args_0),
                 pool_dataset=dataset_oos_trainval,
-                label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
+                label_file_path=os.path.join(
+                    cfg['data_dir'], str(random_seed), cfg['label_file']
+                ),
                 empty_class_id=empty_class_id,
                 acquisitor_name=acq_criterion,
                 train_size=cfg['splits'][0] / (cfg['splits'][0] + cfg['splits'][1]),
@@ -438,14 +446,14 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 test_dataset=dataset_oos_test,
                 test_logfile_path=result_dir,
                 meta_dict=stations_dict,
-                active_directory=cfg['active_dir'],
-                state_cache=os.path.join(cfg['active_dir'], '.activecache.json'),
+                active_directory=os.path.join(cfg['active_dir'], str(random_seed)),
+                state_cache=cache_file,
                 al_batch_size=batch_sizes[0]
             )
 
             print('---> Running initial AL iteration')
-            if os.path.exists(os.path.join(cfg['active_dir'], '.activecache.json')):
-                os.remove(os.path.join(cfg['active_dir'], '.activecache.json'))
+            if os.path.exists(cache_file):
+                os.remove(cache_file)
             seed_everything(random_seed)
             active_learner.run()
             active_learner.do_fresh_start = False
@@ -462,14 +470,10 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 tf.compat.v1.reset_default_graph()
 
                 print(f'---> Starting AL iteration {i + 1}/{al_iterations + 1}')
-                keys_to_label = [
-                    k for k, _ in load_csv(
-                        os.path.join(cfg['active_dir'], 'active_labels.csv')
-                    )
-                ]
+                keys_to_label = [k for k, _ in load_csv(active_labels_file)]
                 save_as_csv(
                     [(k, v) for k, v in label_dict.items() if k in keys_to_label],
-                    os.path.join(cfg['active_dir'], 'active_labels.csv')
+                    active_labels_file
                 )
                 print('---> Supplied fresh labeled data')
                 seed_everything(random_seed)
