@@ -107,8 +107,6 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         'num_classes': cfg['num_classes'],
         'transfer_epochs': cfg['transfer_epochs'],
         'finetune_epochs': cfg['finetune_epochs'],
-        # 'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
-        # 'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
         'finetune_layers': FTLAYERS_TUNED,
         'model_backbone': BACKBONE_TUNED,
         'num_workers': cfg['num_workers'],
@@ -276,10 +274,6 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
             dataset_oos_val,
             list(set(dataset_oos_val.keys).intersection(set(keys_all_nonempty)))
         )
-        dataset_oos_trainval = subset_dataset(
-            dataset_oos_trainval,
-            list(set(dataset_oos_trainval.keys).intersection(set(keys_all_nonempty)))
-        )
 
         # Prepare training
         transfer_callbacks_optimal = [
@@ -327,7 +321,9 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         wandb.finish()
         print('---> Evaluating on out-of-sample data')
         evaluator = Evaluator(
-            dataset=ds, conf_threshold=float(THRESH_TUNED), **evaluator_args,
+            dataset=dataset_oos_test,
+            conf_threshold=float(THRESH_TUNED),
+            **evaluator_args,
         )
         evaluator.evaluate(trainer_optimal)
         save_as_pickle(
@@ -412,8 +408,9 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         # n_init_batches = sum([x * init_rep for x in init_sizes])
         # n_max_batches = (n_obs - n_init_batches) // 1024
         # size_last_batch = n_obs - (n_init_batches + n_max_batches * 1024)
-        init_batches: Final[List] = [2**x for x in range(7, 14)]
-        batch_sizes: Final[List] = init_batches + [n_obs - sum(init_batches)]
+        # init_batches: Final[List] = [2**x for x in range(7, 14)]
+        # batch_sizes: Final[List] = init_batches + [n_obs - sum(init_batches)]
+        batch_sizes = [128, n_obs - 128]
 
         for mode in ['coldstart']:  # ['warmstart', 'coldstart']:
 
@@ -436,7 +433,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 label_file_path=os.path.join(cfg['data_dir'], cfg['label_file']),
                 empty_class_id=empty_class_id,
                 acquisitor_name=acq_criterion,
-                train_size=cfg['splits'][0],
+                train_size=cfg['splits'][0] / (cfg['splits'][0] + cfg['splits'][1]),
                 conf_threshold=THRESH_TUNED,
                 test_dataset=dataset_oos_test,
                 test_logfile_path=result_dir,
@@ -500,17 +497,6 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                                 factor=0.1,
                             ),
                             WandbCallback(save_code=True, save_model=False)
-                        ],
-                        'finetune_callbacks': [
-                            EarlyStopping(
-                                monitor=cfg['earlystop_metric'],
-                                patience=3 * cfg['finetune_patience'],
-                            ),
-                            ReduceLROnPlateau(
-                                monitor=cfg['earlystop_metric'],
-                                patience=cfg['finetune_patience'],
-                                factor=0.1,
-                            ),
                         ],
                         'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
                         'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
