@@ -476,8 +476,6 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                     active_labels_file
                 )
                 print('---> Supplied fresh labeled data')
-                seed_everything(random_seed)
-                active_learner.set_batch_size(batch_sizes[i])
 
                 wandb.init(
                     project='wildlilfe',
@@ -517,10 +515,15 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                         }
                     )
                 active_learner.set_trainer(WildlifeTrainer(**trainer_args_i))
-                if i == al_iterations:
+                if i < al_iterations - 1:
+                    batch_size_i = batch_sizes[i + 1]
+                    print(f'---> Setting batch size to {batch_size_i}')
+                    active_learner.set_batch_size(batch_size_i)
+                else:
                     active_learner.set_final()
-                active_learner.run()
 
+                seed_everything(random_seed)
+                active_learner.run()
                 wandb.finish()
                 gc.collect()
 
