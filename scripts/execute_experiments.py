@@ -517,7 +517,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                         }
                     )
                 active_learner.set_trainer(WildlifeTrainer(**trainer_args_i))
-                if i == al_iterations - 1:
+                if i == al_iterations:
                     active_learner.set_final()
                 active_learner.run()
 
