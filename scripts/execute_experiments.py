@@ -105,7 +105,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
         'num_classes': cfg['num_classes'],
-        'transfer_epochs': 2,  # cfg['transfer_epochs'],
+        'transfer_epochs': cfg['transfer_epochs'],
         'finetune_epochs': cfg['finetune_epochs'],
         'finetune_layers': FTLAYERS_TUNED,
         'model_backbone': BACKBONE_TUNED,
@@ -408,9 +408,9 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         # n_init_batches = sum([x * init_rep for x in init_sizes])
         # n_max_batches = (n_obs - n_init_batches) // 1024
         # size_last_batch = n_obs - (n_init_batches + n_max_batches * 1024)
-        # init_batches: Final[List] = [2**x for x in range(7, 14)]
-        # batch_sizes: Final[List] = init_batches + [n_obs - sum(init_batches)]
-        batch_sizes = [128, n_obs - 128]
+        init_batches: Final[List] = [2**x for x in range(7, 14)]
+        batch_sizes: Final[List] = init_batches + [n_obs - sum(init_batches)]
+        # batch_sizes = [128, n_obs - 128]
 
         for mode in ['coldstart']:  # ['warmstart', 'coldstart']:
 
