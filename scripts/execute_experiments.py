@@ -460,16 +460,16 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
 
             # Set AL iterations to maximum or as specified in config
             if cfg['al_iterations'] < 0:
-                al_iterations = len(batch_sizes) - 1
+                al_iterations = len(batch_sizes)
             else:
-                al_iterations = min(cfg['al_iterations'], len(batch_sizes) - 1)
+                al_iterations = min(cfg['al_iterations'], len(batch_sizes))
 
-            for i in range(al_iterations):
+            for i in range(al_iterations)[1:]:
 
                 tf.keras.backend.clear_session()
                 tf.compat.v1.reset_default_graph()
 
-                print(f'---> Starting AL iteration {i + 1}/{al_iterations + 1}')
+                print(f'---> Starting AL iteration {i}/{al_iterations - 1}')
                 keys_to_label = [k for k, _ in load_csv(active_labels_file)]
                 save_as_csv(
                     [(k, v) for k, v in label_dict.items() if k in keys_to_label],
@@ -477,7 +477,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 )
                 print('---> Supplied fresh labeled data')
                 seed_everything(random_seed)
-                active_learner.al_batch_size = batch_sizes[i + 1]
+                active_learner.set_batch_size(batch_sizes[i])
 
                 wandb.init(
                     project='wildlilfe',
@@ -491,10 +491,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                                 mode='min',
                                 patience=2 * cfg['transfer_patience'],
                                 start_from_epoch=10,
-                                # min_delta=0.5,
-                                # baseline=0.,
-                                # verbose=True,
-                                # restore_best_weights=True,
+                                min_delta=0.01,
                             ),
                             ReduceLROnPlateau(
                                 monitor=cfg['earlystop_metric'],
@@ -519,8 +516,9 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                             )
                         }
                     )
-
                 active_learner.set_trainer(WildlifeTrainer(**trainer_args_i))
+                if i == al_iterations - 1:
+                    active_learner.set_final()
                 active_learner.run()
 
                 wandb.finish()
