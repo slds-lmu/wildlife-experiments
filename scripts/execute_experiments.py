@@ -412,7 +412,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         batch_sizes: Final[List] = init_batches + [n_obs - sum(init_batches)]
         # batch_sizes = [128, n_obs - 128]
 
-        for mode in ['coldstart']:  # ['warmstart', 'coldstart']:
+        for mode in ['warmstart']:  # ['warmstart', 'coldstart']:
 
             result_dir = os.path.join(
                 cfg['result_dir'], mode, acq_criterion, str(random_seed)
