@@ -91,8 +91,6 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
     dataset_oos_trainval = load_pickle(os.path.join(
         cfg['data_dir'], 'dataset_oos_trainval.pkl')
     )
-    print(len(dataset_oos_trainval.keys))
-    exit()
     dataset_oos_test = load_pickle(os.path.join(
         cfg['data_dir'], 'dataset_oos_test.pkl')
     )
@@ -404,7 +402,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
 
         # Compute batch sizes
         # TODO flexibilize
-        n_obs = len(dataset_oos_trainval.keys)
+        n_obs = len(map_bbox_to_img(dataset_oos_trainval.keys))
         # init_sizes: Final[List] = [128, 256, 512]
         # init_rep: Final[int] = 3
         # n_init_batches = sum([x * init_rep for x in init_sizes])
@@ -412,7 +410,16 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         # size_last_batch = n_obs - (n_init_batches + n_max_batches * 1024)
         init_batches: Final[List] = [2**x for x in range(7, 14)]
         batch_sizes: Final[List] = init_batches + [n_obs - sum(init_batches)]
-        # batch_sizes = [128, n_obs - 128]
+        _, keys_all_nonempty = separate_empties(
+            os.path.join(
+                cfg['data_dir'], cfg['detector_file']), float(THRESH_TUNED)
+        )
+        keys_oos_trainval = list(
+            set(dataset_oos_trainval.keys).intersection(set(keys_all_nonempty))
+        )
+        dataset_oos_trainval = subset_dataset(dataset_oos_trainval, keys_oos_trainval)
+        print(batch_sizes)
+        exit()
 
         for mode in ['warmstart']:  # ['warmstart', 'coldstart']:
 
