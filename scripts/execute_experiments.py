@@ -91,6 +91,8 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
     dataset_oos_trainval = load_pickle(os.path.join(
         cfg['data_dir'], 'dataset_oos_trainval.pkl')
     )
+    print(len(dataset_oos_trainval.keys))
+    exit()
     dataset_oos_test = load_pickle(os.path.join(
         cfg['data_dir'], 'dataset_oos_test.pkl')
     )
