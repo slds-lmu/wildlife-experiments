@@ -400,6 +400,15 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
 
     elif experiment == 'active_exec':
 
+        _, keys_all_nonempty = separate_empties(
+            os.path.join(
+                cfg['data_dir'], cfg['detector_file']), float(THRESH_TUNED)
+        )
+        keys_oos_trainval = list(
+            set(dataset_oos_trainval.keys).intersection(set(keys_all_nonempty))
+        )
+        dataset_oos_trainval = subset_dataset(dataset_oos_trainval, keys_oos_trainval)
+
         # Compute batch sizes
         # TODO flexibilize
         n_obs = len(map_bbox_to_img(dataset_oos_trainval.keys))
@@ -410,14 +419,6 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         # size_last_batch = n_obs - (n_init_batches + n_max_batches * 1024)
         init_batches: Final[List] = [2**x for x in range(7, 14)]
         batch_sizes: Final[List] = init_batches + [n_obs - sum(init_batches)]
-        _, keys_all_nonempty = separate_empties(
-            os.path.join(
-                cfg['data_dir'], cfg['detector_file']), float(THRESH_TUNED)
-        )
-        keys_oos_trainval = list(
-            set(dataset_oos_trainval.keys).intersection(set(keys_all_nonempty))
-        )
-        dataset_oos_trainval = subset_dataset(dataset_oos_trainval, keys_oos_trainval)
         print(batch_sizes)
         exit()
 
