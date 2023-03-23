@@ -105,7 +105,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
         'num_classes': cfg['num_classes'],
-        'transfer_epochs': cfg['transfer_epochs'],
+        'transfer_epochs': 1,  # cfg['transfer_epochs'],
         'finetune_epochs': cfg['finetune_epochs'],
         'finetune_layers': FTLAYERS_TUNED,
         'model_backbone': BACKBONE_TUNED,
@@ -133,7 +133,9 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         for threshold in thresholds:
 
             str_thresh = str(int(100 * threshold))
-            os.makedirs(os.path.join(cfg['result_dir'], str_thresh), exist_ok=True)
+            os.makedirs(
+                os.path.join(cfg['result_dir'], 'passive', str_thresh), exist_ok=True
+            )
 
             # Get imgs that MD classifies as empty
             if threshold == 0.:
@@ -234,6 +236,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                     evaluator.get_details(),
                     os.path.join(
                         cfg['result_dir'],
+                        'passive',
                         str_thresh,
                         f'{TIMESTR}_insample_{n}_{random_seed}.pkl'
                     )
@@ -252,6 +255,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                     details_oos,
                     os.path.join(
                         cfg['result_dir'],
+                        'passive',
                         str_thresh,
                         f'{TIMESTR}_oosample_{random_seed}.pkl'
                     )
@@ -330,6 +334,8 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
             evaluator.get_details(),
             os.path.join(
                 cfg['result_dir'],
+                'active',
+                'optimal',
                 f'{TIMESTR}_results_active_optimal_{random_seed}.pkl'
             )
         )
@@ -412,18 +418,13 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         # Compute batch sizes
         # TODO flexibilize
         n_obs = len(map_bbox_to_img(dataset_oos_trainval.keys))
-        # init_sizes: Final[List] = [128, 256, 512]
-        # init_rep: Final[int] = 3
-        # n_init_batches = sum([x * init_rep for x in init_sizes])
-        # n_max_batches = (n_obs - n_init_batches) // 1024
-        # size_last_batch = n_obs - (n_init_batches + n_max_batches * 1024)
         init_batches: Final[List] = [2**x for x in range(7, 13)]
         batch_sizes: Final[List] = init_batches + [n_obs - sum(init_batches)]
 
-        for mode in ['coldstart']:  # ['warmstart', 'coldstart']:
+        for mode in ['warmstart', 'coldstart']:
 
             result_dir = os.path.join(
-                cfg['result_dir'], mode, acq_criterion, str(random_seed)
+                cfg['result_dir'], 'active', mode, acq_criterion, str(random_seed)
             )
             os.makedirs(result_dir, exist_ok=True)
             cache_file = os.path.join(
