@@ -135,7 +135,7 @@ ray_results/
 .activecache.json
 *.csv#
 data/pretrained*
-active/
+active_dir/
 models/
 wandb/
 data/*
