@@ -105,7 +105,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         'batch_size': cfg['batch_size'],
         'loss_func': keras.losses.SparseCategoricalCrossentropy(),
         'num_classes': cfg['num_classes'],
-        'transfer_epochs': 1,  # cfg['transfer_epochs'],
+        'transfer_epochs': cfg['transfer_epochs'],
         'finetune_epochs': cfg['finetune_epochs'],
         'finetune_layers': FTLAYERS_TUNED,
         'model_backbone': BACKBONE_TUNED,
