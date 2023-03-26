@@ -1,6 +1,0 @@
-{
-    "model_backbone": "xception",
-    "finetune_layers": 0,
-    "md_conf": 0.5,
-    "f1": 0.8477583098580497
-}
