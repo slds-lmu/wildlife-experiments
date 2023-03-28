@@ -3,6 +3,7 @@ import math
 import os
 import gc
 import time
+
 import pandas as pd
 from typing import Final, Dict, List
 import click
@@ -17,9 +18,9 @@ from wildlifeml.training.evaluator import Evaluator
 from wildlifeml.training.models import ModelFactory
 from wildlifeml.training.trainer import WildlifeTrainer
 from wildlifeml.utils.datasets import separate_empties
-from wildlifeml.utils.io import load_json, load_pickle, save_as_json
+from wildlifeml.utils.io import load_json, load_pickle
 
-from utils import product_dict
+from utils import product_dict, seed_everything
 
 
 TIMESTR: Final[str] = time.strftime("%Y%m%d%H%M")
@@ -29,12 +30,16 @@ TIMESTR: Final[str] = time.strftime("%Y%m%d%H%M")
 @click.option(
     '--repo_dir', '-p', help='Your personal path to this repo.', required=True
 )
-def main(repo_dir: str):
+@click.option(
+    '--random_seed', '-s', help='Random seed.', required=True
+)
+def main(repo_dir: str, random_seed: int):
 
     # ----------------------------------------------------------------------------------
     # GLOBAL ---------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------
 
+    seed_everything(random_seed)
     cfg: Final[Dict] = load_json(os.path.join(repo_dir, 'configs/cfg.json'))
     os.makedirs(cfg['result_dir'], exist_ok=True)
 
@@ -47,32 +52,6 @@ def main(repo_dir: str):
         os.path.join(cfg['data_dir'], 'label_map.json')
     ).get('empty')
 
-    # Define early-stopping callbacks
-    transfer_callbacks = [
-        EarlyStopping(
-            monitor=cfg['earlystop_metric'],
-            patience=2 * cfg['transfer_patience'],
-        ),
-        ReduceLROnPlateau(
-            monitor=cfg['earlystop_metric'],
-            patience=cfg['transfer_patience'],
-            factor=0.1,
-            verbose=1,
-        ),
-    ]
-    finetune_callbacks = [
-        EarlyStopping(
-            monitor=cfg['earlystop_metric'],
-            patience=2 * cfg['finetune_patience'],
-        ),
-        ReduceLROnPlateau(
-            monitor=cfg['earlystop_metric'],
-            patience=cfg['finetune_patience'],
-            factor=0.1,
-            verbose=1,
-        )
-    ]
-
     # ----------------------------------------------------------------------------------
     # TUNING ---------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------
@@ -80,8 +59,8 @@ def main(repo_dir: str):
     # Define search grid
     search_space: Dict = {
         'model_backbone': ['xception', 'densenet121', 'inception_resnet_v2'],
-        'finetune_layers': [0, 0.05, 0.25, 0.5],
-        'md_conf': [0.1, 0.25, 0.5, 0.9]
+        'finetune_layers': [0.],
+        'md_conf': np.arange(0.1, 1, 0.2).round(2).tolist()
     }
     search_grid = list(product_dict(**search_space))
 
@@ -120,6 +99,10 @@ def main(repo_dir: str):
         )
         dataset_is_train = subset_dataset(dataset_is_train, keys_is_train)
         dataset_is_val_highconf = subset_dataset(dataset_is_val, keys_is_val)
+        dataset_is_val.shuffle = False
+        dataset_is_val_highconf.shuffle = False
+        dataset_is_val.augmentation = None
+        dataset_is_val_highconf.augmentation = None
 
         # Determine number of finetuning layers
         model = ModelFactory.get(model_id=this_backbone, num_classes=cfg['num_classes'])
@@ -137,7 +120,33 @@ def main(repo_dir: str):
                 f'ftlayers_{this_finetune_layers}'
             ]
         )
-        transfer_callbacks.append(WandbCallback(save_code=True, save_model=False))
+
+        # Define early-stopping callbacks
+        transfer_callbacks = [
+            EarlyStopping(
+                monitor=cfg['earlystop_metric'],
+                patience=2 * cfg['transfer_patience'],
+            ),
+            ReduceLROnPlateau(
+                monitor=cfg['earlystop_metric'],
+                patience=cfg['transfer_patience'],
+                factor=0.1,
+                verbose=1,
+            ),
+            WandbCallback(save_code=True, save_model=False),
+        ]
+        finetune_callbacks = [
+            EarlyStopping(
+                monitor=cfg['earlystop_metric'],
+                patience=2 * cfg['finetune_patience'],
+            ),
+            ReduceLROnPlateau(
+                monitor=cfg['earlystop_metric'],
+                patience=cfg['finetune_patience'],
+                factor=0.1,
+                verbose=1,
+            )
+        ]
 
         # Define trainer args
         trainer_args: Dict = {
@@ -159,7 +168,6 @@ def main(repo_dir: str):
         # Train
         trainer = WildlifeTrainer(**trainer_args)
         print(f'---> Training with configuration {idx}')
-        tf.random.set_seed(cfg['random_state'])
         trainer.fit(dataset_is_train, dataset_is_val_highconf)
         wandb.finish()
 
@@ -174,8 +182,8 @@ def main(repo_dir: str):
             conf_threshold=this_conf
         )
         print(f'---> Evaluating for configuration {idx}')
-        result = evaluator.evaluate(trainer)
-
+        evaluator.evaluate(trainer)
+        result = evaluator.compute_metrics()
         tuning_archive.append(
             [
                 TIMESTR,
@@ -193,7 +201,9 @@ def main(repo_dir: str):
             ]
         )
         df = pd.DataFrame(tuning_archive, columns=col_names)
-        archive_file = os.path.join(cfg['result_dir'], 'results_tuning_archive.csv')
+        archive_file = os.path.join(
+            cfg['result_dir'], f'results_tuning_archive_{random_seed}.csv'
+        )
         if os.path.exists(archive_file):
             existing = pd.read_csv(archive_file, usecols=col_names)
             combined = pd.concat([existing, df], ignore_index=True)

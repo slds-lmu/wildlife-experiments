@@ -15,6 +15,7 @@ from wildlifeml.utils.io import (
     save_as_pickle
 )
 from wildlifeml.utils.misc import flatten_list
+from utils import seed_everything
 
 STATIONS_IS: Final[List] = [
     '8235_For',
@@ -63,17 +64,16 @@ STATIONS_OOS: Final[List] = [
 @click.option(
     '--repo_dir', '-p', help='Your personal path to this repo.', required=True
 )
-def main(repo_dir: str):
+@click.option(
+    '--random_seed', '-s', help='Random seed.', required=True
+)
+def main(repo_dir: str, random_seed: int):
 
     # ----------------------------------------------------------------------------------
     # GLOBAL ---------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------
 
-    save_as_json(
-        {'ins': STATIONS_IS, 'oos': STATIONS_OOS},
-        os.path.join(repo_dir, 'stations_list.json')
-    )
-    exit()
+    seed_everything(random_seed)
     cfg: Final[Dict] = load_json(os.path.join(repo_dir, 'configs/cfg.json'))
 
     # Create label map and  label file with two columns (img key, numeric label)
@@ -90,7 +90,7 @@ def main(repo_dir: str):
             batch_size=cfg['md_batchsize'], confidence_threshold=cfg['md_conf']
         )
         md.predict_directory(
-            directory=os.path.join(cfg['root_dir'], cfg['img_dir']),
+            directory=cfg['img_dir'],
             output_file=os.path.join(cfg['data_dir'], cfg['detector_file']),
         )
 
@@ -152,13 +152,13 @@ def main(repo_dir: str):
         img_keys=keys_is,
         splits=cfg['splits'],
         meta_dict=station_dict,
-        random_state=cfg['random_state']
+        random_state=random_seed,
     )
     keys_oos_train, keys_oos_val, keys_oos_test = do_stratified_splitting(
         img_keys=keys_oos,
         splits=cfg['splits'],
         meta_dict=station_dict,
-        random_state=cfg['random_state']
+        random_state=random_seed,
     )
 
     # Map keys to bbxox level

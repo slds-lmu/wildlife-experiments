@@ -11,13 +11,11 @@ from wildlifeml.utils.io import save_as_json
 @click.option(
     '--repo_dir', '-p', help='Your personal path to this repo.', required=True
 )
-@click.option('--root_dir', '-p', help='Path to original data root dir.', required=True)
 @click.option(
-    '--img_dir', '-p', help='Path to img dir under data root dir.', required=True
+    '--img_dir', '-p', help='Your personal path to the images directory.', required=True
 )
 def main(repo_dir: str, root_dir: str, img_dir: str):
     cfg: Final[Dict] = {
-        'root_dir': root_dir,
         'img_dir': img_dir,
         'data_dir': repo_dir + 'data/',
         'result_dir': repo_dir + 'results/',
@@ -27,7 +25,6 @@ def main(repo_dir: str, root_dir: str, img_dir: str):
         'meta_file': 'stations.csv',
         'md_conf': 0.1,
         'md_batchsize': 32,
-        'random_state': 123,
         'splits': (0.7, 0.15, 0.15),
         'batch_size': 32,
         'num_classes': 8,

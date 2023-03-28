@@ -2,6 +2,7 @@
 
 GPUNAME=$1
 PERSONALFOLDER=$2
+SEED=$3
 if [[ -z $GPUNAME ]]
 then
     echo `date`" - Missing mandatory arguments: GPU name. "
@@ -14,4 +15,5 @@ else
 fi
 
 python scripts/execute_tuning.py \
---repo_dir=$PERSONALFOLDER/wildlife-experiments/
+--repo_dir=$PERSONALFOLDER/wildlife-experiments/ \
+--random_seed=$SEED
