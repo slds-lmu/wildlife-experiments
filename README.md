@@ -1,4 +1,4 @@
-# wildlife-experiments
+# Wildlife experiments :deer:
 
 This repository contains a variety of experiments implementing the analytic pipeline for wildlife image classification designed in [`wildlife-ml`](https://github.com/slds-lmu/wildlife-ml).
 Our approach is two-fold, combining improved strategies for object detection and image classification with an active learning system that allows for more efficient training of deep learning models. 
@@ -14,7 +14,7 @@ We provide our full Python environment in `env.yml`.
 
 ```
 ├── configs
-    ├── cfg.son
+    └── cfg.son
 ├── data
     ├── images_megadetector.json
     ├── ...
@@ -24,6 +24,7 @@ We provide our full Python environment in `env.yml`.
     ├── execute_experiments.py
     ├── ...
     └── run_experiments.sh
+```
 
 ### 02: Order of execution
 
