@@ -1,6 +1,5 @@
 {
-    "root_dir": "/common/bothmannl/",
-    "img_dir": "wildlife_images/usecase2/original_images/",
+    "img_dir": "/common/bothmannl/wildlife_images/usecase2/original_images/",
     "data_dir": "/home/wimmerl/projects/wildlife-experiments/data/",
     "result_dir": "/home/wimmerl/projects/wildlife-experiments/results/",
     "label_file": "labels.csv",

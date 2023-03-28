@@ -125,10 +125,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
 
     if experiment == 'passive':
 
-        thresholds = [0.]
-        # thresholds = np.arange(0.1, 1, 0.2).round(2).tolist()
-        # details_ins_test: Dict = {}
-        # details_ins_val: Dict = {}
+        thresholds = np.arange(0.1, 1, 0.2).round(2).tolist()
 
         for threshold in thresholds:
 
@@ -416,7 +413,6 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         dataset_oos_trainval = subset_dataset(dataset_oos_trainval, keys_oos_trainval)
 
         # Compute batch sizes
-        # TODO flexibilize
         n_obs = len(map_bbox_to_img(dataset_oos_trainval.keys))
         init_batches: Final[List] = [2**x for x in range(7, 13)]
         batch_sizes: Final[List] = init_batches + [n_obs - sum(init_batches)]

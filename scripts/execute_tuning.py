@@ -4,7 +4,6 @@ import os
 import gc
 import time
 
-import numpy as np
 import pandas as pd
 from typing import Final, Dict, List
 import click
@@ -59,9 +58,9 @@ def main(repo_dir: str, random_seed: int):
 
     # Define search grid
     search_space: Dict = {
-        'model_backbone': ['resnet50'],  # ['xception', 'densenet121', 'inception_resnet_v2'],
-        'finetune_layers': [0.],  # [0, 0.05, 0.25, 0.5],
-        'md_conf': [0.3, 0.5, 0.7, 0.9]  # np.arange(0.1, 1, 0.2).round(2).tolist()
+        'model_backbone': ['xception', 'densenet121', 'inception_resnet_v2'],
+        'finetune_layers': [0.],
+        'md_conf': np.arange(0.1, 1, 0.2).round(2).tolist()
     }
     search_grid = list(product_dict(**search_space))
 
