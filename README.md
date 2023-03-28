@@ -31,8 +31,8 @@ We provide our full Python environment in `env.yml`.
 - The scripts are executed in the following order:
   - `prep_config.py`
   - `prep_data.py`
-  - Optional: `execute_tuning.py`
-  - `execute_expeiments`
+  - `execute_tuning.py` (optional)
+  - `execute_experiments.py`
 - Each Python script has an accompanying bash file that allows for convenient, step-by-step command-line execution with minimal user input.
 - `prep_config.py` specifies user preferences, in particular:
   - `img_dir`: path to directory where images are stored. Please note: all images should be in a single directory, allocation to different datasets is done via separate files containing the respectively relevant keys. 
