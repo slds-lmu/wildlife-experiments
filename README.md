@@ -4,6 +4,22 @@ This repository contains a variety of experiments implementing the analytic pipe
 Our approach is two-fold, combining improved strategies for object detection and image classification with an active learning system that allows for more efficient training of deep learning models. 
 Please also see [https://github.com/slds-lmu/wildlife-ml](https://github.com/slds-lmu/wildlife-ml) for a detailed description.
 
+## Citation
+
+By using this repo, please cite our paper [Automated wildlife image classification: An active learning tool for ecological applications](https://arxiv.org/abs/2303.15823), here is a bibtex entry for it:
+
+```
+@misc{bothmann2023automated,
+      title={Automated wildlife image classification: An active learning tool for ecological applications}, 
+      author={Ludwig Bothmann and Lisa Wimmer and Omid Charrakh and Tobias Weber and Hendrik Edelhoff and Wibke Peters and Hien Nguyen and Caryl Benjamin and Annette Menzel},
+      year={2023},
+      eprint={2303.15823},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      doi={https://doi.org/10.48550/arXiv.2303.15823}
+}
+```
+
 ## Installation
 
 We provide our full Python environment in `env.yml`.
