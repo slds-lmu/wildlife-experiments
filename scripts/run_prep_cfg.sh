@@ -2,8 +2,7 @@
 
 GPUNAME=$1
 PERSONALFOLDER=$2
-ROOTDIR=${3:-'/common/bothmannl/'}
-IMGDIR=${4:-'wildlife_images/usecase2/original_images/'}
+IMGDIR=${3:-'/common/bothmannl/wildlife_images/usecase2/original_images/'}
 
 if [[ -z $GPUNAME ]]
 then
@@ -18,5 +17,4 @@ fi
 
 python scripts/prep_config.py \
 --repo_dir=$PERSONALFOLDER/wildlife-experiments/ \
---root_dir=$ROOTDIR \
 --img_dir=$IMGDIR

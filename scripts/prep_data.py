@@ -90,7 +90,7 @@ def main(repo_dir: str, random_seed: int):
             batch_size=cfg['md_batchsize'], confidence_threshold=cfg['md_conf']
         )
         md.predict_directory(
-            directory=os.path.join(cfg['root_dir'], cfg['img_dir']),
+            directory=cfg['img_dir'],
             output_file=os.path.join(cfg['data_dir'], cfg['detector_file']),
         )
 

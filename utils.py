@@ -93,6 +93,8 @@ def seed_everything(seed: int) -> None:
 # move below the initial value in <patience> epochs, training stops (despite steady
 # improvement after initial zig-zagging). Newer TF versions have option to set number of
 # burn-in epochs and monitor improvement only after these, but not available here.
+
+
 class MyEarlyStopping(Callback):
     """EarlyStopping callback from newest TF version."""
 
