@@ -3,7 +3,7 @@
     "data_dir": "/home/wimmerl/projects/wildlife-experiments/data/",
     "result_dir": "/home/wimmerl/projects/wildlife-experiments/results/",
     "label_file": "labels.csv",
-    "detector_file": "images_megadetector.json",
+    "detector_file": "images_megadetector_md5.json",
     "mapping_file": "bbox_map.json",
     "meta_file": "stations.csv",
     "md_conf": 0.1,
@@ -27,7 +27,7 @@
         "accuracy"
     ],
     "test_logfile": "test_logfile",
-    "active_dir": "/home/wimmerl/projects/wildlife-experiments/active_dir/",
+    "active_dir": "/home/wimmerl/projects/wildlife-experiments/active/",
     "al_batchsize": 32,
     "al_iterations": -1,
     "pretraining_ckpt": "pretrained_weights"
