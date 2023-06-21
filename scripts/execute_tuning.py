@@ -4,7 +4,6 @@ import os
 import gc
 import time
 
-import numpy as np
 import pandas as pd
 from typing import Final, Dict, List
 import click
