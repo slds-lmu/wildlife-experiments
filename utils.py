@@ -37,8 +37,10 @@ def seed_everything(seed: int) -> None:
 # https://github.com/keras-team/keras/blob/v2.11.0/keras/callbacks.py#L1943
 # Problem: loss starts low, picks up briefly, then starts decreasing --> if it doesn't
 # move below the initial value in <patience> epochs, training stops (despite steady
-# improvement after initial zig-zagging). Adopt option to set number of
-# burn-in epochs and monitor improvement only after these from newest TF version.
+# improvement after initial zig-zagging). Newer TF versions have option to set number of
+# burn-in epochs and monitor improvement only after these, but not available here.
+
+
 class MyEarlyStopping(Callback):
     """EarlyStopping callback from newest TF version."""
 
