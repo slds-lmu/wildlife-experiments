@@ -14,13 +14,13 @@ from wildlifeml.utils.io import save_as_json
 @click.option(
     '--img_dir', '-p', help='Your personal path to the images directory.', required=True
 )
-def main(repo_dir: str, root_dir: str, img_dir: str):
+def main(repo_dir: str, img_dir: str):
     cfg: Final[Dict] = {
         'img_dir': img_dir,
         'data_dir': repo_dir + 'data/',
         'result_dir': repo_dir + 'results/',
         'label_file': 'labels.csv',
-        'detector_file': 'images_megadetector.json',
+        'detector_file': 'images_megadetector_md5.json',
         'mapping_file': 'bbox_map.json',
         'meta_file': 'stations.csv',
         'md_conf': 0.1,
