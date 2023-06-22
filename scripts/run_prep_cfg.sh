@@ -1,7 +1,7 @@
 #!/bin/bash
 
 GPUNAME=$1
-PERSONALFOLDER=$2
+PERSONALFOLDER=${2:-'/home/wimmerl/projects'}
 IMGDIR=${3:-'/common/bothmannl/wildlife_images/usecase2/original_images/'}
 
 if [[ -z $GPUNAME ]]
