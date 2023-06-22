@@ -1,7 +1,7 @@
 #!/bin/bash
 
-PERSONALFOLDER=$1
-SEED=$2
+SEED=$1
+PERSONALFOLDER=${2:-'/home/wimmerl/projects'}
 
 python scripts/prep_data.py \
 --repo_dir=$PERSONALFOLDER/wildlife-experiments/ \
