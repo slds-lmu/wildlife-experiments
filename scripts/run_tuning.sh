@@ -1,8 +1,8 @@
 #!/bin/bash
 
 GPUNAME=$1
-PERSONALFOLDER=$2
-SEED=$3
+SEED=$2
+PERSONALFOLDER=${3:-'/home/wimmerl/projects'}
 if [[ -z $GPUNAME ]]
 then
     echo `date`" - Missing mandatory arguments: GPU name. "
