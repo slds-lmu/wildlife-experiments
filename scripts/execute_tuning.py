@@ -203,7 +203,7 @@ def main(repo_dir: str, random_seed: int):
         )
         df = pd.DataFrame(tuning_archive, columns=col_names)
         archive_file = os.path.join(
-            cfg['result_dir'], f'results_tuning_archive_md5_{random_seed}.csv'
+            cfg['result_dir'], 'tuning', f'results_tuning_archive_md5_{random_seed}.csv'
         )
         if os.path.exists(archive_file):
             existing = pd.read_csv(archive_file, usecols=col_names)
