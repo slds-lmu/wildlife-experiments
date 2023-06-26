@@ -333,7 +333,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 cfg['result_dir'],
                 'active',
                 'optimal',
-                f'{TIMESTR}_results_active_optimal_{random_seed}.pkl'
+                f'{TIMESTR}_results_active_optimal_{random_seed}_md5.pkl'
             )
         )
 
