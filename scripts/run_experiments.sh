@@ -1,9 +1,9 @@
 #!/bin/bash
 
 GPUNAME=$1
-PERSONALFOLDER=$2
-EXPERIMENT=$3
-SEED=$4
+EXPERIMENT=$2
+SEED=$3
+PERSONALFOLDER=${4:-'/home/wimmerl/projects'}
 ACQCRITERION=${5-entropy}
 if [[ -z $GPUNAME ]]
 then

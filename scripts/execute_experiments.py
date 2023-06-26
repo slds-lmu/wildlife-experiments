@@ -30,7 +30,7 @@ from wandb.keras import WandbCallback
 from utils import seed_everything, MyEarlyStopping
 
 TIMESTR: Final[str] = time.strftime("%Y%m%d%H%M")
-THRESH_TUNED: Final[float] = 0.5
+THRESH_TUNED: Final[float] = 0.1  # 0.5
 THRESH_PROGRESSIVE: Final[float] = 0.5
 THRESH_NOROUZZADEH: Final[float] = 0.9
 BACKBONE_TUNED: Final[str] = 'xception'
@@ -235,7 +235,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                         cfg['result_dir'],
                         'passive',
                         str_thresh,
-                        f'{TIMESTR}_insample_{n}_{random_seed}.pkl'
+                        f'{TIMESTR}_insample_{n}_{random_seed}_md5.pkl'
                     )
                 )
 
@@ -254,7 +254,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                         cfg['result_dir'],
                         'passive',
                         str_thresh,
-                        f'{TIMESTR}_oosample_{random_seed}.pkl'
+                        f'{TIMESTR}_oosample_{random_seed}_md5.pkl'
                     )
                 )
 
