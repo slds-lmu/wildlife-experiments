@@ -363,17 +363,17 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 verbose=1,
             )
         ]
-        wandb.init(project='wildlilfe', tags=['active', 'pretraining'])
-        transfer_callbacks_pretraining.append(
-            WandbCallback(save_code=True, save_model=False)
-        )
+        # wandb.init(project='wildlilfe', tags=['active', 'pretraining'])
+        # transfer_callbacks_pretraining.append(
+        #     WandbCallback(save_code=True, save_model=False)
+        # )
         ckpt_dir = os.path.join(
             cfg['data_dir'], cfg['pretraining_ckpt'], str(random_seed)
         )
         os.makedirs(ckpt_dir, exist_ok=True)
         ckpt_callback = [
             keras.callbacks.ModelCheckpoint(
-                filepath=os.path.join(ckpt_dir, 'ckpt.hdf5'),
+                filepath=os.path.join(ckpt_dir, 'ckpt_md5.hdf5'),
                 monitor=cfg['earlystop_metric'],
                 mode='min',
                 save_weights_only=True,
@@ -399,7 +399,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
             load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_train_thresh.pkl')),
             load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_val_thresh.pkl'))
         )
-        wandb.finish()
+        # wandb.finish()
 
     elif experiment == 'active_exec':
 
@@ -416,11 +416,15 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         n_obs = len(map_bbox_to_img(dataset_oos_trainval.keys))
         init_batches: Final[List] = [2**x for x in range(7, 13)]
         batch_sizes: Final[List] = init_batches + [n_obs - sum(init_batches)]
-
         for mode in ['warmstart', 'coldstart']:
 
             result_dir = os.path.join(
-                cfg['result_dir'], 'active', mode, acq_criterion, str(random_seed)
+                cfg['result_dir'],
+                'active',
+                mode,
+                acq_criterion,
+                'md5', 
+                str(random_seed)
             )
             os.makedirs(result_dir, exist_ok=True)
             cache_file = os.path.join(
@@ -465,7 +469,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
 
             # Set AL iterations to maximum or as specified in config
             if cfg['al_iterations'] < 0:
-                al_iterations = len(batch_sizes)
+                al_iterations = len(batch_sizes) - 1
             else:
                 al_iterations = min(cfg['al_iterations'], len(batch_sizes))
 
@@ -515,7 +519,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                                 cfg['data_dir'],
                                 cfg['pretraining_ckpt'],
                                 str(random_seed),
-                                'ckpt.hdf5'
+                                'ckpt_md5.hdf5'
                             )
                         }
                     )
