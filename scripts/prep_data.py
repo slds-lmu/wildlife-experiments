@@ -180,6 +180,7 @@ def main(repo_dir: str, random_seed: int):
                 keys_oos_val_bb,
                 keys_oos_train_bb + keys_oos_val_bb,
                 keys_oos_test_bb,
+                all_keys,
             ],
             [
                 'is_train',
@@ -190,6 +191,7 @@ def main(repo_dir: str, random_seed: int):
                 'oos_val',
                 'oos_trainval',
                 'oos_test'
+                'full',
             ]
     ):
         subset = subset_dataset(dataset, keyset)
