@@ -50,18 +50,19 @@ def main(repo_dir: str, random_seed: int):
         k: {'station': v}
         for k, v in load_csv(os.path.join(cfg['data_dir'], 'stations.csv'))
     }
-    dataset = load_pickle(os.path.join(cfg['data_dir'], 'dataset_full.pkl'))
+    dataset_train = load_pickle(os.path.join(cfg['data_dir'], 'dataset_full_train.pkl'))
+    dataset_val = load_pickle(os.path.join(cfg['data_dir'], 'dataset_full_val.pkl'))
     _, keys_all_nonempty = separate_empties(
         os.path.join(cfg['data_dir'], cfg['detector_file']), float(THRESH_TUNED)
     )
-    keys_train, _, keys_val = do_stratified_splitting(
-        img_keys=list(set(dataset.keys).intersection(set(keys_all_nonempty))),
-        splits=cfg['splits'],
-        meta_dict=stations_dict,
-        random_state=random_seed,
+    keys_train = list(
+        set(dataset_train.keys).intersection(set(keys_all_nonempty))
     )
-    dataset_train = subset_dataset(dataset, keys_train)
-    dataset_val = subset_dataset(dataset, keys_val)
+    keys_val = list(
+        set(dataset_val.keys).intersection(set(keys_all_nonempty))
+    )
+    dataset_train = subset_dataset(dataset_train, keys_train)
+    dataset_val = subset_dataset(dataset_val, keys_val)
     dataset_val.shuffle = False
     dataset_val.augmentation = False
 

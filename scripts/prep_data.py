@@ -160,6 +160,12 @@ def main(repo_dir: str, random_seed: int):
         meta_dict=station_dict,
         random_state=random_seed,
     )
+    keys_train, _, keys_val = do_stratified_splitting(
+        img_keys=all_keys,
+        splits=cfg['splits'],
+        meta_dict=station_dict,
+        random_state=random_seed,
+    )
 
     # Map keys to bbxox level
     keys_is_train_bb = flatten_list([dataset.mapping_dict[k] for k in keys_is_train])
@@ -180,7 +186,8 @@ def main(repo_dir: str, random_seed: int):
                 keys_oos_val_bb,
                 keys_oos_train_bb + keys_oos_val_bb,
                 keys_oos_test_bb,
-                all_keys,
+                keys_train,
+                keys_val,
             ],
             [
                 'is_train',
@@ -191,7 +198,8 @@ def main(repo_dir: str, random_seed: int):
                 'oos_val',
                 'oos_trainval',
                 'oos_test'
-                'full',
+                'full_train',
+                'full_val',
             ]
     ):
         subset = subset_dataset(dataset, keyset)
