@@ -416,6 +416,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         n_obs = len(map_bbox_to_img(dataset_oos_trainval.keys))
         init_batches: Final[List] = [2**x for x in range(7, 13)]
         batch_sizes: Final[List] = init_batches + [n_obs - sum(init_batches)]
+        
         for mode in ['warmstart', 'coldstart']:
 
             result_dir = os.path.join(
@@ -524,11 +525,11 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                         }
                     )
                 active_learner.set_trainer(WildlifeTrainer(**trainer_args_i))
-                if i < al_iterations - 1:
-                    batch_size_i = batch_sizes[i + 1]
-                    print(f'---> Setting batch size to {batch_size_i}')
-                    active_learner.set_batch_size(batch_size_i)
-                else:
+                # if i < al_iterations - 1:
+                batch_size_i = batch_sizes[i + 1]
+                print(f'---> Setting batch size to {batch_size_i}')
+                active_learner.set_batch_size(batch_size_i)
+                if i == al_iterations - 1:
                     active_learner.set_final()
 
                 seed_everything(random_seed)
