@@ -162,7 +162,7 @@ def main(repo_dir: str, random_seed: int):
     )
     keys_train, _, keys_val = do_stratified_splitting(
         img_keys=all_keys,
-        splits=cfg['splits'],
+        splits=(0.7/0.85, 0.,0.15/0.85),
         meta_dict=station_dict,
         random_state=random_seed,
     )
@@ -174,6 +174,8 @@ def main(repo_dir: str, random_seed: int):
     keys_oos_train_bb = flatten_list([dataset.mapping_dict[k] for k in keys_oos_train])
     keys_oos_val_bb = flatten_list([dataset.mapping_dict[k] for k in keys_oos_val])
     keys_oos_test_bb = flatten_list([dataset.mapping_dict[k] for k in keys_oos_test])
+    keys_train_bb = flatten_list([dataset.mapping_dict[k] for k in keys_train])
+    keys_val_bb = flatten_list([dataset.mapping_dict[k] for k in keys_val])
 
     # Create data subsets from different lists of keys
     for keyset, mode in zip(
@@ -186,8 +188,8 @@ def main(repo_dir: str, random_seed: int):
                 keys_oos_val_bb,
                 keys_oos_train_bb + keys_oos_val_bb,
                 keys_oos_test_bb,
-                keys_train,
-                keys_val,
+                keys_train_bb,
+                keys_val_bb,
             ],
             [
                 'is_train',
@@ -197,7 +199,7 @@ def main(repo_dir: str, random_seed: int):
                 'oos_train',
                 'oos_val',
                 'oos_trainval',
-                'oos_test'
+                'oos_test',
                 'full_train',
                 'full_val',
             ]

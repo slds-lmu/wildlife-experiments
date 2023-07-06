@@ -64,7 +64,7 @@ def main(repo_dir: str, random_seed: int):
     dataset_train = subset_dataset(dataset_train, keys_train)
     dataset_val = subset_dataset(dataset_val, keys_val)
     dataset_val.shuffle = False
-    dataset_val.augmentation = False
+    dataset_val.augmentation = None
 
     # Prepare training
     trainer_args: Final[Dict] = {
@@ -102,7 +102,7 @@ def main(repo_dir: str, random_seed: int):
             verbose=1,
         )
     ]
-    ckpt_dir = os.path.join(cfg['data_dir'], cfg['final_ckpt'])
+    ckpt_dir = os.path.join(cfg['data_dir'], 'final_ckpt')
     os.makedirs(ckpt_dir, exist_ok=True)
     ckpt_callback = [
         keras.callbacks.ModelCheckpoint(
