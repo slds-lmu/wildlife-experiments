@@ -470,7 +470,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
 
             # Set AL iterations to maximum or as specified in config
             if cfg['al_iterations'] < 0:
-                al_iterations = len(batch_sizes) - 1
+                al_iterations = len(batch_sizes) 
             else:
                 al_iterations = min(cfg['al_iterations'], len(batch_sizes))
 
@@ -525,11 +525,11 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                         }
                     )
                 active_learner.set_trainer(WildlifeTrainer(**trainer_args_i))
-                # if i < al_iterations - 1:
-                batch_size_i = batch_sizes[i + 1]
-                print(f'---> Setting batch size to {batch_size_i}')
-                active_learner.set_batch_size(batch_size_i)
-                if i == al_iterations - 1:
+                if i < al_iterations - 1:
+                    batch_size_i = batch_sizes[i]
+                    print(f'---> Setting batch size to {batch_size_i}')
+                    active_learner.set_batch_size(batch_size_i)
+                else:
                     active_learner.set_final()
 
                 seed_everything(random_seed)
