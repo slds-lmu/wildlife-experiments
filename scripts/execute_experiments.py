@@ -487,10 +487,10 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 )
                 print('---> Supplied fresh labeled data')
 
-                wandb.init(
-                    project='wildlilfe',
-                    tags=['active', f'iter_{i}', mode, acq_criterion]
-                )
+                # wandb.init(
+                #     project='wildlilfe',
+                #     tags=['active', f'iter_{i}', mode, acq_criterion]
+                # )
                 trainer_args_i: Dict = dict(
                     {
                         'transfer_callbacks': [
@@ -506,7 +506,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                                 patience=cfg['transfer_patience'],
                                 factor=0.1,
                             ),
-                            WandbCallback(save_code=True, save_model=False)
+                            # WandbCallback(save_code=True, save_model=False)
                         ],
                         'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
                         'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
@@ -534,7 +534,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
 
                 seed_everything(random_seed)
                 active_learner.run()
-                wandb.finish()
+                # wandb.finish()
                 gc.collect()
 
     else:
