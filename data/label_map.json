@@ -1,10 +1,9 @@
 {
-    "empty": 0,
-    "european_hare": 1,
-    "others": 2,
-    "red_deer": 3,
-    "red_fox": 4,
-    "red_squirrel": 5,
-    "roe_deer": 6,
-    "wild_boar": 7
+    "0": 0,
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "4": 4,
+    "5": 5,
+    "6": 6
 }

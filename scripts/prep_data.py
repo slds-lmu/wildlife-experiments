@@ -108,11 +108,11 @@ def main(repo_dir: str, random_seed: int):
     save_as_json(label_map, os.path.join(cfg['data_dir'], 'label_map.json'))
     save_as_csv(
         [(k, v) for k, v in label_dict.items()],
-        os.path.join(cfg['data_dir'], 'labels.csv'),
+        os.path.join(cfg['data_dir'], cfg['label_file']),
     )
     save_as_csv(
         [(k, v) for k, v in station_dict.items()],
-        os.path.join(cfg['data_dir'], 'stations.csv'),
+        os.path.join(cfg['data_dir'], cfg['meta_file']),
     )
     save_as_json(key_map, os.path.join(cfg['data_dir'], cfg['mapping_file']))
 
@@ -148,6 +148,7 @@ def main(repo_dir: str, random_seed: int):
 
     # Split keys into train/val/test (only two-way for in-sample bc splitting is done
     # later according to chosen MD threshold)
+    breakpoint()
     keys_is_train, keys_is_val, keys_is_test = do_stratified_splitting(
         img_keys=keys_is,
         splits=cfg['splits'],

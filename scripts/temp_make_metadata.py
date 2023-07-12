@@ -15,13 +15,13 @@ def main(md_file: str, repo_dir: str):
 
     meta_data = load_json(md_file)
     station_dict = {x['id']: x['location'] for x in meta_data['images']}
-    label_dict = {x['id']: x['name'] for x in meta_data['categories']}
+    label_dict = {x['image_id']: x['category_id'] for x in meta_data['annotations']}
     meta_dict = {
         k: {'label': label_dict[k], 'station': station_dict[k]}
         for k in station_dict.keys() & label_dict.keys()
     }
     save_as_csv(
-        [(k, v) for k, v in meta_dict.items()],
+        [(k, v['label'], v['station']) for k, v in meta_dict.items()],
         os.path.join(repo_dir, 'data', 'metadata_channel_islands.csv'),
         header=['orig_name', 'true_class', 'station']
     )
