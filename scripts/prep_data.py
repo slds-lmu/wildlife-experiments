@@ -9,7 +9,7 @@ from typing import Dict, Final, List
 import albumentations as A
 from wildlifeml.preprocessing.megadetector import MegaDetector
 from wildlifeml.data import WildlifeDataset, subset_dataset
-from wildlifeml.utils.datasets import do_stratified_splitting, map_bbox_to_img
+from wildlifeml.utils.datasets import do_stratified_splitting, map_bbox_to_img, _get_strat_objects
 from wildlifeml.utils.io import (
     load_csv_dict,
     save_as_csv,
@@ -67,7 +67,9 @@ class BBoxMapper:
     def __init__(self, detector_file_path: str):
         """Initialize BBoxMapper."""
         self.detector_dict = load_json(detector_file_path)
-        self.key_map = self._map_img_to_bboxes()
+        key_map = self._map_img_to_bboxes()
+        print(len(key_map))
+        self.key_map = key_map
 
     def _map_img_to_bboxes(self) -> Dict[str, List[str]]:
         """Create mapping from img to bbox keys and cache."""
@@ -126,12 +128,14 @@ def main(repo_dir: str, random_seed: int):
     # Create mapping from img to bboxes
     mapper = BBoxMapper(os.path.join(cfg['data_dir'], cfg['detector_file']))
     key_map = mapper.get_keymap()
+    print(key_map)
 
     # Eliminate imgs with missing information
     for k in (set(key_map) - set(label_dict)):
         del key_map[k]
     for k in (set(key_map) - set(station_dict)):
         del key_map[k]
+    print(len(key_map))
 
     # Save everything
     save_as_json(label_map, os.path.join(cfg['data_dir'], 'label_map.json'))
@@ -159,6 +163,7 @@ def main(repo_dir: str, random_seed: int):
     )
     # Create base dataset with all available keys
     all_keys = list(key_map.keys())
+    print(all_keys)
     dataset = WildlifeDataset(
         keys=all_keys,
         image_dir=cfg['img_dir'],
@@ -174,13 +179,14 @@ def main(repo_dir: str, random_seed: int):
     # Define in-sample & out-of-sample keys according to camera stations
     stations = list(station_dict.keys())
     STATIONS_IS = random.sample(stations, math.ceil(0.5 * len(stations)))
-    STATIONS_OOS = list(set.(stations) - set(STATIONS_IS))
+    STATIONS_OOS = list(set(stations) - set(STATIONS_IS))
     keys_is = [k for k in all_keys if station_dict[k]['station'] in STATIONS_IS]
     keys_oos = [k for k in all_keys if station_dict[k]['station'] in STATIONS_OOS]
 
     # Split keys into train/val/test (only two-way for in-sample bc splitting is done
     # later according to chosen MD threshold)
-    breakpoint()
+
+    strat_dict, keys_array, strat_var_array = _get_strat_objects(keys_is, station_dict)
     keys_is_train, keys_is_val, keys_is_test = do_stratified_splitting(
         img_keys=keys_is,
         splits=cfg['splits'],

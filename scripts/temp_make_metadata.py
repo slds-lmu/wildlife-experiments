@@ -21,7 +21,7 @@ def main(md_file: str, repo_dir: str):
         for k in station_dict.keys() & label_dict.keys()
     }
     save_as_csv(
-        [(k, v['label'], v['station']) for k, v in meta_dict.items()],
+        [(f'{k}.jpg', v['label'], v['station']) for k, v in meta_dict.items()],
         os.path.join(repo_dir, 'data', 'metadata_channel_islands.csv'),
         header=['orig_name', 'true_class', 'station']
     )
