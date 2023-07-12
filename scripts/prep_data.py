@@ -1,4 +1,6 @@
 """Prepare data to perform experiments on."""
+import math
+import random
 
 import click
 import os
@@ -17,47 +19,47 @@ from wildlifeml.utils.io import (
 from wildlifeml.utils.misc import flatten_list
 from utils import seed_everything
 
-STATIONS_IS: Final[List] = [
-    '8235_For',
-    '5838_2For',
-    '6225_2For',
-    '7935_2_F',
-    '5924_3For',
-    '8229_2_F',
-    '6027_3For',
-    '6032_4For',
-    '5636_4For',
-    '7545_2For',
-    '6131_1For',
-    '6533_4For',
-    '5923_3For',
-    '6137_4For',
-    '5938_3For',
-    '8130_2_F',
-    '5837_4For',
-    '6234_2For'
-]
-STATIONS_OOS: Final[List] = [
-    '7143_4For',
-    '7446_1For',
-    '6035_3For',
-    '8131_1_F',
-    '6934_For',
-    '7837_4_For',
-    '8141_2For',
-    '5933_4_For',
-    '7544_2For',
-    '8243_1For',
-    '7332_For',
-    '5728_2Fb',
-    '6231_4For',
-    '8030_1_F',
-    '7730_2For',
-    '5737_3_For',
-    '6122_4For',
-    '6034_2For',
-    '5728_2Fa'
-]
+# STATIONS_IS: Final[List] = [
+#     '8235_For',
+#     '5838_2For',
+#     '6225_2For',
+#     '7935_2_F',
+#     '5924_3For',
+#     '8229_2_F',
+#     '6027_3For',
+#     '6032_4For',
+#     '5636_4For',
+#     '7545_2For',
+#     '6131_1For',
+#     '6533_4For',
+#     '5923_3For',
+#     '6137_4For',
+#     '5938_3For',
+#     '8130_2_F',
+#     '5837_4For',
+#     '6234_2For'
+# ]
+# STATIONS_OOS: Final[List] = [
+#     '7143_4For',
+#     '7446_1For',
+#     '6035_3For',
+#     '8131_1_F',
+#     '6934_For',
+#     '7837_4_For',
+#     '8141_2For',
+#     '5933_4_For',
+#     '7544_2For',
+#     '8243_1For',
+#     '7332_For',
+#     '5728_2Fb',
+#     '6231_4For',
+#     '8030_1_F',
+#     '7730_2For',
+#     '5737_3_For',
+#     '6122_4For',
+#     '6034_2For',
+#     '5728_2Fa'
+# ]
 
 
 @click.command()
@@ -143,6 +145,9 @@ def main(repo_dir: str, random_seed: int):
     # Restructure station dict to match stratified-splitting arguments
     station_dict = {k: {'station': v} for k, v in station_dict.items()}
     # Define in-sample & out-of-sample keys according to camera stations
+    stations = list(station_dict.keys())
+    STATIONS_IS = random.sample(stations, math.ceil(0.5 * len(stations)))
+    STATIONS_OOS = list(set.(stations) - set(STATIONS_IS))
     keys_is = [k for k in all_keys if station_dict[k]['station'] in STATIONS_IS]
     keys_oos = [k for k in all_keys if station_dict[k]['station'] in STATIONS_OOS]
 
