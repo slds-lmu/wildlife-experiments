@@ -1,14 +1,15 @@
 """Prepare data to perform experiments on."""
 import math
 import random
+from collections import Counter
 
 import click
 import os
 from typing import Dict, Final, List
 import albumentations as A
 from wildlifeml.preprocessing.megadetector import MegaDetector
-from wildlifeml.data import BBoxMapper, WildlifeDataset, subset_dataset
-from wildlifeml.utils.datasets import do_stratified_splitting
+from wildlifeml.data import WildlifeDataset, subset_dataset
+from wildlifeml.utils.datasets import do_stratified_splitting, map_bbox_to_img
 from wildlifeml.utils.io import (
     load_csv_dict,
     save_as_csv,
@@ -60,7 +61,33 @@ from utils import seed_everything
 #     '6034_2For',
 #     '5728_2Fa'
 # ]
+class BBoxMapper:
+    """Object for mapping between images and bboxes (et vice versa)."""
 
+    def __init__(self, detector_file_path: str):
+        """Initialize BBoxMapper."""
+        self.detector_dict = load_json(detector_file_path)
+        self.key_map = self._map_img_to_bboxes()
+
+    def _map_img_to_bboxes(self) -> Dict[str, List[str]]:
+        """Create mapping from img to bbox keys and cache."""
+        keys_bbox_sorted = sorted(list(self.detector_dict.keys()))
+        keys_img = [map_bbox_to_img(k) for k in keys_bbox_sorted]
+        keys_img_sorted = sorted(keys_img)
+        cnts = list(Counter(keys_img_sorted).values())
+        keys_img_unique = sorted(list(set(keys_img_sorted)))
+
+        key_map = {}
+        start = 0
+        for i in range(len(keys_img_unique)):
+            end = start + cnts[i]
+            key_map.update({keys_img_unique[i]: keys_bbox_sorted[start:end]})
+            start = end
+        return key_map
+
+    def get_keymap(self) -> Dict:
+        """Return the key map."""
+        return self.key_map
 
 @click.command()
 @click.option(
