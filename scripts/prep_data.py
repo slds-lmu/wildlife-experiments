@@ -77,7 +77,7 @@ def main(repo_dir: str, random_seed: int):
     cfg: Final[Dict] = load_json(os.path.join(repo_dir, 'configs/cfg.json'))
 
     # Create label map and  label file with two columns (img key, numeric label)
-    info_list = load_csv_dict(os.path.join(cfg['data_dir'], 'metadata.csv'))
+    info_list = load_csv_dict(os.path.join(cfg['data_dir'], cfg['info_file']))
     class_names = list(set([x['true_class'] for x in info_list]))
     class_names = sorted(class_names)
     label_map = {class_names[i]: i for i in range(len(class_names))}
