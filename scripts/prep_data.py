@@ -8,8 +8,8 @@ import os
 from typing import Dict, Final, List
 import albumentations as A
 from wildlifeml.preprocessing.megadetector import MegaDetector
-from wildlifeml.data import WildlifeDataset, subset_dataset
-from wildlifeml.utils.datasets import do_stratified_splitting, map_bbox_to_img, _get_strat_objects
+from wildlifeml.data import WildlifeDataset, subset_dataset, BBoxMapper
+from wildlifeml.utils.datasets import do_stratified_splitting
 from wildlifeml.utils.io import (
     load_csv_dict,
     save_as_csv,
@@ -61,35 +61,6 @@ from utils import seed_everything
 #     '6034_2For',
 #     '5728_2Fa'
 # ]
-class BBoxMapper:
-    """Object for mapping between images and bboxes (et vice versa)."""
-
-    def __init__(self, detector_file_path: str):
-        """Initialize BBoxMapper."""
-        self.detector_dict = load_json(detector_file_path)
-        key_map = self._map_img_to_bboxes()
-        print(len(key_map))
-        self.key_map = key_map
-
-    def _map_img_to_bboxes(self) -> Dict[str, List[str]]:
-        """Create mapping from img to bbox keys and cache."""
-        keys_bbox_sorted = sorted(list(self.detector_dict.keys()))
-        keys_img = [map_bbox_to_img(k) for k in keys_bbox_sorted]
-        keys_img_sorted = sorted(keys_img)
-        cnts = list(Counter(keys_img_sorted).values())
-        keys_img_unique = sorted(list(set(keys_img_sorted)))
-
-        key_map = {}
-        start = 0
-        for i in range(len(keys_img_unique)):
-            end = start + cnts[i]
-            key_map.update({keys_img_unique[i]: keys_bbox_sorted[start:end]})
-            start = end
-        return key_map
-
-    def get_keymap(self) -> Dict:
-        """Return the key map."""
-        return self.key_map
 
 @click.command()
 @click.option(
@@ -128,14 +99,12 @@ def main(repo_dir: str, random_seed: int):
     # Create mapping from img to bboxes
     mapper = BBoxMapper(os.path.join(cfg['data_dir'], cfg['detector_file']))
     key_map = mapper.get_keymap()
-    print(key_map)
 
     # Eliminate imgs with missing information
     for k in (set(key_map) - set(label_dict)):
         del key_map[k]
     for k in (set(key_map) - set(station_dict)):
         del key_map[k]
-    print(len(key_map))
 
     # Save everything
     save_as_json(label_map, os.path.join(cfg['data_dir'], 'label_map.json'))
@@ -163,7 +132,6 @@ def main(repo_dir: str, random_seed: int):
     )
     # Create base dataset with all available keys
     all_keys = list(key_map.keys())
-    print(all_keys)
     dataset = WildlifeDataset(
         keys=all_keys,
         image_dir=cfg['img_dir'],
@@ -186,7 +154,6 @@ def main(repo_dir: str, random_seed: int):
     # Split keys into train/val/test (only two-way for in-sample bc splitting is done
     # later according to chosen MD threshold)
 
-    strat_dict, keys_array, strat_var_array = _get_strat_objects(keys_is, station_dict)
     keys_is_train, keys_is_val, keys_is_test = do_stratified_splitting(
         img_keys=keys_is,
         splits=cfg['splits'],
