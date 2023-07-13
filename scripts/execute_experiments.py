@@ -69,7 +69,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
     }
     stations_dict = {
         k: {'station': v}
-        for k, v in load_csv(os.path.join(cfg['data_dir'], 'stations.csv'))
+        for k, v in load_csv(os.path.join(cfg['data_dir'], cfg['meta_file']))
     }
 
     # Get data
@@ -99,7 +99,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         ds.augmentation = None
     empty_class_id = load_json(
         os.path.join(cfg['data_dir'], 'label_map.json')
-    ).get('empty')
+    ).get('empty') or 0
 
     trainer_args: Final[Dict] = {
         'batch_size': cfg['batch_size'],
@@ -130,9 +130,10 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         for threshold in thresholds:
 
             str_thresh = str(int(100 * threshold))
-            os.makedirs(
-                os.path.join(cfg['result_dir'], 'passive', str_thresh), exist_ok=True
+            result_dir = os.path.join(
+                cfg['result_dir'], 'channel_islands', 'passive', str_thresh
             )
+            os.makedirs(result_dir, exist_ok=True)
 
             # Get imgs that MD classifies as empty
             if threshold == 0.:
@@ -251,10 +252,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 save_as_pickle(
                     details_oos,
                     os.path.join(
-                        cfg['result_dir'],
-                        'passive',
-                        str_thresh,
-                        f'{TIMESTR}_oosample_{random_seed}_md5.pkl'
+                        result_dir, f'{TIMESTR}_oosample_{random_seed}_md5.pkl'
                     )
                 )
 
