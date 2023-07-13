@@ -28,7 +28,7 @@ def main(repo_dir: str, img_dir: str):
         'md_batchsize': 32,
         'splits': (0.7, 0.15, 0.15),
         'batch_size': 32,
-        'num_classes': 6,
+        'num_classes': 7,
         'transfer_epochs': 200,
         'finetune_epochs': 200,
         'transfer_learning_rate': 0.001,

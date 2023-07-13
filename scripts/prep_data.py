@@ -143,10 +143,10 @@ def main(repo_dir: str, random_seed: int):
     )
 
     # Restructure station dict to match stratified-splitting arguments
+    stations = list(set(station_dict.values()))
     station_dict = {k: {'station': v} for k, v in station_dict.items()}
     # Define in-sample & out-of-sample keys according to camera stations
-    stations = list(station_dict.keys())
-    STATIONS_IS = random.sample(stations, math.ceil(0.5 * len(stations)))
+    STATIONS_IS = list(random.sample(stations, math.ceil(0.5 * len(stations))))
     STATIONS_OOS = list(set(stations) - set(STATIONS_IS))
     keys_is = [k for k in all_keys if station_dict[k]['station'] in STATIONS_IS]
     keys_oos = [k for k in all_keys if station_dict[k]['station'] in STATIONS_OOS]

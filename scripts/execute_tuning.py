@@ -42,7 +42,9 @@ def main(repo_dir: str, random_seed: int):
 
     seed_everything(random_seed)
     cfg: Final[Dict] = load_json(os.path.join(repo_dir, 'configs/cfg.json'))
-    os.makedirs(cfg['result_dir'], exist_ok=True)
+    os.makedirs(
+        os.path.join(cfg['result_dir'], 'channel_islands', 'tuning'), exist_ok=True
+    )
 
     # Fetch data
     dataset_is_train = load_pickle(
@@ -51,7 +53,7 @@ def main(repo_dir: str, random_seed: int):
     dataset_is_val = load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_val.pkl'))
     empty_class_id = load_json(
         os.path.join(cfg['data_dir'], 'label_map.json')
-    ).get('empty')
+    ).get('empty') or 0
 
     # ----------------------------------------------------------------------------------
     # TUNING ---------------------------------------------------------------------------
@@ -111,7 +113,7 @@ def main(repo_dir: str, random_seed: int):
         this_finetune_layers = math.floor(
             candidate['finetune_layers'] * n_layers_featext
         )
-
+  
         # Add logging
         wandb.init(
             project='wildlilfe',
@@ -203,7 +205,10 @@ def main(repo_dir: str, random_seed: int):
         )
         df = pd.DataFrame(tuning_archive, columns=col_names)
         archive_file = os.path.join(
-            cfg['result_dir'], 'tuning', f'results_tuning_archive_md5_{random_seed}.csv'
+            cfg['result_dir'],
+            'channel_islands',
+            'tuning', 
+            f'results_tuning_archive_md5_{random_seed}.csv'
         )
         if os.path.exists(archive_file):
             existing = pd.read_csv(archive_file, usecols=col_names)
