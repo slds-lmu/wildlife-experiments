@@ -43,7 +43,7 @@ def main(repo_dir: str, random_seed: int):
     seed_everything(random_seed)
     cfg: Final[Dict] = load_json(os.path.join(repo_dir, 'configs/cfg.json'))
     os.makedirs(
-        os.path.join(cfg['result_dir'], 'channel_islands', 'tuning'), exist_ok=True
+        os.path.join(cfg['result_dir'], 'tuning'), exist_ok=True
     )
 
     # Fetch data
@@ -206,7 +206,6 @@ def main(repo_dir: str, random_seed: int):
         df = pd.DataFrame(tuning_archive, columns=col_names)
         archive_file = os.path.join(
             cfg['result_dir'],
-            'channel_islands',
             'tuning', 
             f'results_tuning_archive_md5_{random_seed}.csv'
         )
