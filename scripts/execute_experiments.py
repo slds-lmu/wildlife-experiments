@@ -130,9 +130,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         for threshold in thresholds:
 
             str_thresh = str(int(100 * threshold))
-            result_dir = os.path.join(
-                cfg['result_dir'], 'channel_islands', 'passive', str_thresh
-            )
+            result_dir = os.path.join(cfg['result_dir'], 'passive', str_thresh)
             os.makedirs(result_dir, exist_ok=True)
 
             # Get imgs that MD classifies as empty
@@ -363,7 +361,9 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         #     WandbCallback(save_code=True, save_model=False)
         # )
         ckpt_dir = os.path.join(
-            cfg['data_dir'], cfg['pretraining_ckpt'], str(random_seed)
+            cfg['data_dir'],
+            cfg['pretraining_ckpt'],
+            str(random_seed)
         )
         os.makedirs(ckpt_dir, exist_ok=True)
         ckpt_callback = [
