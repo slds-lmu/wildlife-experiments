@@ -233,10 +233,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 save_as_pickle(
                     evaluator.get_details(),
                     os.path.join(
-                        cfg['result_dir'],
-                        'passive',
-                        str_thresh,
-                        f'{TIMESTR}_insample_{n}_{random_seed}_md5.pkl'
+                        result_dir, f'{TIMESTR}_insample_{n}_{random_seed}_md5.pkl'
                     )
                 )
 
