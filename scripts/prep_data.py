@@ -1,7 +1,6 @@
 """Prepare data to perform experiments on."""
 import math
 import random
-from collections import Counter
 
 import click
 import os
