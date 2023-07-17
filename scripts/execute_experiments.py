@@ -411,7 +411,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         n_obs = len(map_bbox_to_img(dataset_oos_trainval.keys))
         init_batches: Final[List] = [2**x for x in range(7, 13)]
         batch_sizes: Final[List] = init_batches + [n_obs - sum(init_batches)]
-        
+
         for mode in ['warmstart', 'coldstart']:
 
             result_dir = os.path.join(
