@@ -6,9 +6,6 @@ from wildlifeml.utils.io import load_json, save_as_csv, save_as_json
 
 @click.command()
 @click.option(
-    '--md_file', '-f', help='Path to MD file.', required=True
-)
-@click.option(
     '--data_dir', '-p', help='Your personal path to this dir.', required=True
 )
 def main(data_dir: str):
@@ -25,7 +22,7 @@ def main(data_dir: str):
         os.path.join(data_dir, 'metadata.csv'),
         header=['orig_name', 'true_class', 'station']
     )
-    label_map = {x['id']: x['name'] for x in meta_data['categories']}
+    label_map = {x['name']: int(x['id']) for x in meta_data['categories']}
     save_as_json(label_map, os.path.join(data_dir, 'label_map_names.json'))
 
 
