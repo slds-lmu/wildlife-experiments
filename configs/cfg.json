@@ -1,6 +1,6 @@
 {
     "img_dir": "/common/bothmannl/wildlife_images/usecase2/original_images/",
-    "data_dir": "/home/wimmerl/projects/wildlife-experiments/data/bavaria/md4/",
+    "data_dir": "/home/wimmerl/projects/wildlife-experiments/data/bavaria/md5/",
     "result_dir": "/home/wimmerl/projects/wildlife-experiments/results/bavaria/",
     "info_file": "metadata.csv",
     "label_file": "labels.csv",
