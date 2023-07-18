@@ -17,9 +17,9 @@ from wildlifeml.utils.io import save_as_json
 def main(repo_dir: str, img_dir: str):
     cfg: Final[Dict] = {
         'img_dir': img_dir,
-        'data_dir': repo_dir + 'data/channel_islands/',
-        'result_dir': repo_dir + 'results/channel_islands/',
-        'info_file': 'metadata_channel_islands.csv',
+        'data_dir': repo_dir + 'data/bavaria/',
+        'result_dir': repo_dir + 'results/bavaria/',
+        'info_file': 'metadata.csv',
         'label_file': 'labels.csv',
         'detector_file': 'md.json',  # 'images_megadetector_md5.json',
         'mapping_file': 'bbox_map.json',
@@ -39,7 +39,7 @@ def main(repo_dir: str, img_dir: str):
         'num_workers': 16,
         'eval_metrics': ['accuracy'],
         'test_logfile': 'test_logfile',
-        'active_dir': repo_dir + 'active/channel/islands/',
+        'active_dir': repo_dir + 'active/',
         'al_batchsize': 32,
         'al_iterations': -1,
         'pretraining_ckpt': 'pretrained_weights',
