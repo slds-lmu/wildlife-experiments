@@ -63,6 +63,11 @@ def main(repo_dir: str, random_seed: int):
         del key_map[k]
     for k in (set(key_map) - set(station_dict)):
         del key_map[k]
+    # Rm class 'other'
+    other = list(set(k for k, v in label_dict.items() if v == 6))
+    for k in other:
+        if k in key_map.keys():
+            del key_map[k]
 
     # Save everything
     save_as_json(label_map, os.path.join(cfg['data_dir'], 'label_map.json'))
@@ -109,7 +114,7 @@ def main(repo_dir: str, random_seed: int):
         stations_oos = stations['STATIONS_OOS']
     else:
         stations = list(set(station_dict.values()))
-        stations_is = list(random.sample(stations, math.ceil(0.3 * len(stations))))
+        stations_is = list(random.sample(stations, math.ceil(0.25 * len(stations))))
         stations_oos = list(set(stations) - set(stations_is))
 
     keys_is = [k for k in all_keys if station_dict_mod[k]['station'] in stations_is]
