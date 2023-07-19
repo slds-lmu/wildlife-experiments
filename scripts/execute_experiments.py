@@ -231,7 +231,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 save_as_pickle(
                     evaluator.get_details(),
                     os.path.join(
-                        result_dir, f'{TIMESTR}_insample_{n}_{random_seed}_md5.pkl'
+                        result_dir, f'{TIMESTR}_insample_{n}_{random_seed}.pkl'
                     )
                 )
 
@@ -247,7 +247,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 save_as_pickle(
                     details_oos,
                     os.path.join(
-                        result_dir, f'{TIMESTR}_oosample_{random_seed}_md5.pkl'
+                        result_dir, f'{TIMESTR}_oosample_{random_seed}.pkl'
                     )
                 )
 
@@ -326,7 +326,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 cfg['result_dir'],
                 'active',
                 'optimal',
-                f'{TIMESTR}_results_active_optimal_{random_seed}_md5.pkl'
+                f'{TIMESTR}_results_active_optimal_{random_seed}.pkl'
             )
         )
 
@@ -368,7 +368,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         os.makedirs(ckpt_dir, exist_ok=True)
         ckpt_callback = [
             keras.callbacks.ModelCheckpoint(
-                filepath=os.path.join(ckpt_dir, 'ckpt_md5.hdf5'),
+                filepath=os.path.join(ckpt_dir, 'ckpt.hdf5'),
                 monitor=cfg['earlystop_metric'],
                 mode='min',
                 save_weights_only=True,
@@ -515,7 +515,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                                 cfg['data_dir'],
                                 cfg['pretraining_ckpt'],
                                 str(random_seed),
-                                'ckpt_md5.hdf5'
+                                'ckpt.hdf5'
                             )
                         }
                     )
