@@ -108,9 +108,10 @@ def main(repo_dir: str, random_seed: int):
         stations_is = stations['STATIONS_IS']
         stations_oos = stations['STATIONS_OOS']
     else:
-        stations = list(set(station_dict.items()))
-        stations_is = list(random.sample(stations, math.ceil(0.5 * len(stations))))
+        stations = list(set(station_dict.values()))
+        stations_is = list(random.sample(stations, math.ceil(0.3 * len(stations))))
         stations_oos = list(set(stations) - set(stations_is))
+
     keys_is = [k for k in all_keys if station_dict_mod[k]['station'] in stations_is]
     keys_oos = [k for k in all_keys if station_dict_mod[k]['station'] in stations_oos]
 
@@ -123,6 +124,7 @@ def main(repo_dir: str, random_seed: int):
         meta_dict=station_dict_mod,
         random_state=random_seed,
     )
+
     keys_oos_train, keys_oos_val, keys_oos_test = do_stratified_splitting(
         img_keys=keys_oos,
         splits=cfg['splits'],
