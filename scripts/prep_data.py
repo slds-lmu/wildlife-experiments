@@ -114,6 +114,7 @@ def main(repo_dir: str, random_seed: int):
         stations_is = stations['STATIONS_IS']
         stations_oos = stations['STATIONS_OOS']
     else:
+        random.seed(random_seed)
         stations = list(set(station_dict.values()))
         stations_is = list(random.sample(stations, math.ceil(0.5 * len(stations))))
         stations_oos = list(set(stations) - set(stations_is))
@@ -123,11 +124,10 @@ def main(repo_dir: str, random_seed: int):
     keys_is = [k for k in all_keys if station_dict_mod[k]['station'] in stations_is]
     keys_oos = [k for k in all_keys if station_dict_mod[k]['station'] in stations_oos]
 
-    labels_keys_is = [v for k, v in label_dict.items() if k in keys_is]
-    labels_keys_oos = [v for k, v in label_dict.items() if k in keys_oos]
+    labels_keys_is = [label_dict[k] for k in keys_is]
+    labels_keys_oos = [label_dict[k] for k in keys_oos]
     counter_is = collections.Counter(labels_keys_is)
-    counter_is = collections.Counter(labels_keys_oos)
-    breakpoint()
+    counter_oos = collections.Counter(labels_keys_oos)
 
     # Split keys into train/val/test (only two-way for in-sample bc splitting is done
     # later according to chosen MD threshold)
