@@ -116,6 +116,8 @@ def main(repo_dir: str, random_seed: int):
         stations = list(set(station_dict.values()))
         stations_is = list(random.sample(stations, math.ceil(0.25 * len(stations))))
         stations_oos = list(set(stations) - set(stations_is))
+        stations_dct = {'STATIONS_IS': stations_is, 'STATIONS_OOS': stations_oos}
+        save_as_json(stations_dct, os.path.join(cfg['data_dir'], 'stations_split.json')) 
 
     keys_is = [k for k in all_keys if station_dict_mod[k]['station'] in stations_is]
     keys_oos = [k for k in all_keys if station_dict_mod[k]['station'] in stations_oos]
