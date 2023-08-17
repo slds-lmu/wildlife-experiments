@@ -30,7 +30,7 @@ from wandb.keras import WandbCallback
 from utils import seed_everything, MyEarlyStopping
 
 TIMESTR: Final[str] = time.strftime("%Y%m%d%H%M")
-THRESH_TUNED: Final[float] = 0.5
+THRESH_TUNED: Final[float] = 0.1  # 0.5
 THRESH_PROGRESSIVE: Final[float] = 0.5
 THRESH_NOROUZZADEH: Final[float] = 0.9
 BACKBONE_TUNED: Final[str] = 'xception'
@@ -69,7 +69,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
     }
     stations_dict = {
         k: {'station': v}
-        for k, v in load_csv(os.path.join(cfg['data_dir'], 'stations.csv'))
+        for k, v in load_csv(os.path.join(cfg['data_dir'], cfg['meta_file']))
     }
 
     # Get data
@@ -99,7 +99,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         ds.augmentation = None
     empty_class_id = load_json(
         os.path.join(cfg['data_dir'], 'label_map.json')
-    ).get('empty')
+    ).get('empty') or 0
 
     trainer_args: Final[Dict] = {
         'batch_size': cfg['batch_size'],
@@ -130,9 +130,8 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         for threshold in thresholds:
 
             str_thresh = str(int(100 * threshold))
-            os.makedirs(
-                os.path.join(cfg['result_dir'], 'passive', str_thresh), exist_ok=True
-            )
+            result_dir = os.path.join(cfg['result_dir'], 'passive', str_thresh)
+            os.makedirs(result_dir, exist_ok=True)
 
             # Get imgs that MD classifies as empty
             if threshold == 0.:
@@ -232,10 +231,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 save_as_pickle(
                     evaluator.get_details(),
                     os.path.join(
-                        cfg['result_dir'],
-                        'passive',
-                        str_thresh,
-                        f'{TIMESTR}_insample_{n}_{random_seed}.pkl'
+                        result_dir, f'{TIMESTR}_insample_{n}_{random_seed}.pkl'
                     )
                 )
 
@@ -251,10 +247,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 save_as_pickle(
                     details_oos,
                     os.path.join(
-                        cfg['result_dir'],
-                        'passive',
-                        str_thresh,
-                        f'{TIMESTR}_oosample_{random_seed}.pkl'
+                        result_dir, f'{TIMESTR}_oosample_{random_seed}.pkl'
                     )
                 )
 
@@ -368,7 +361,9 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
             WandbCallback(save_code=True, save_model=False)
         )
         ckpt_dir = os.path.join(
-            cfg['data_dir'], cfg['pretraining_ckpt'], str(random_seed)
+            cfg['data_dir'],
+            cfg['pretraining_ckpt'],
+            str(random_seed)
         )
         os.makedirs(ckpt_dir, exist_ok=True)
         ckpt_callback = [
@@ -420,7 +415,12 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         for mode in ['warmstart', 'coldstart']:
 
             result_dir = os.path.join(
-                cfg['result_dir'], 'active', mode, acq_criterion, str(random_seed)
+                cfg['result_dir'],
+                'active',
+                mode,
+                acq_criterion,
+                'md5', 
+                str(random_seed)
             )
             os.makedirs(result_dir, exist_ok=True)
             cache_file = os.path.join(
@@ -465,7 +465,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
 
             # Set AL iterations to maximum or as specified in config
             if cfg['al_iterations'] < 0:
-                al_iterations = len(batch_sizes)
+                al_iterations = len(batch_sizes) 
             else:
                 al_iterations = min(cfg['al_iterations'], len(batch_sizes))
 
@@ -521,7 +521,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                     )
                 active_learner.set_trainer(WildlifeTrainer(**trainer_args_i))
                 if i < al_iterations - 1:
-                    batch_size_i = batch_sizes[i + 1]
+                    batch_size_i = batch_sizes[i]
                     print(f'---> Setting batch size to {batch_size_i}')
                     active_learner.set_batch_size(batch_size_i)
                 else:
