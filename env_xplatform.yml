@@ -1,0 +1,15 @@
+name: wildlife
+channels:
+  - defaults
+dependencies:
+  - wandb
+  - jupyter
+  - seaborn
+  - python=3.9
+  - nptyping
+  - numba
+  - tensorflow-gpu
+  - numpy
+  - pandas
+prefix: /home/wimmerl/miniconda2/envs/wildlife
+
