@@ -356,10 +356,10 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 verbose=1,
             )
         ]
-        # wandb.init(project='wildlilfe', tags=['active', 'pretraining'])
-        # transfer_callbacks_pretraining.append(
-        #     WandbCallback(save_code=True, save_model=False)
-        # )
+        wandb.init(project='wildlilfe', tags=['active', 'pretraining'])
+        transfer_callbacks_pretraining.append(
+            WandbCallback(save_code=True, save_model=False)
+        )
         ckpt_dir = os.path.join(
             cfg['data_dir'],
             cfg['pretraining_ckpt'],
@@ -394,7 +394,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
             load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_train_thresh.pkl')),
             load_pickle(os.path.join(cfg['data_dir'], 'dataset_is_val_thresh.pkl'))
         )
-        # wandb.finish()
+        wandb.finish()
 
     elif experiment == 'active_exec':
 
@@ -412,7 +412,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         init_batches: Final[List] = [2**x for x in range(7, 13)]
         batch_sizes: Final[List] = init_batches + [n_obs - sum(init_batches)]
 
-        for mode in ['warmstart']:  #  ['warmstart', 'coldstart']:
+        for mode in ['warmstart', 'coldstart']:
 
             result_dir = os.path.join(
                 cfg['result_dir'],
@@ -482,10 +482,10 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 )
                 print('---> Supplied fresh labeled data')
 
-                # wandb.init(
-                #     project='wildlilfe',
-                #     tags=['active', f'iter_{i}', mode, acq_criterion]
-                # )
+                wandb.init(
+                    project='wildlilfe',
+                    tags=['active', f'iter_{i}', mode, acq_criterion]
+                )
                 trainer_args_i: Dict = dict(
                     {
                         'transfer_callbacks': [
@@ -501,7 +501,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                                 patience=cfg['transfer_patience'],
                                 factor=0.1,
                             ),
-                            # WandbCallback(save_code=True, save_model=False)
+                            WandbCallback(save_code=True, save_model=False)
                         ],
                         'transfer_optimizer': Adam(cfg['transfer_learning_rate']),
                         'finetune_optimizer': Adam(cfg['finetune_learning_rate']),
@@ -529,7 +529,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
 
                 seed_everything(random_seed)
                 active_learner.run()
-                # wandb.finish()
+                wandb.finish()
                 gc.collect()
 
     else:
