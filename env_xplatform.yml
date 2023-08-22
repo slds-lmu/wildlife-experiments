@@ -11,5 +11,3 @@ dependencies:
   - tensorflow-gpu
   - numpy
   - pandas
-prefix: /home/wimmerl/miniconda2/envs/wildlife
-
