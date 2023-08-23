@@ -5,7 +5,7 @@ import random
 
 import click
 import os
-from typing import Dict, Final, List
+from typing import Dict, Final
 import albumentations as A
 from wildlifeml.preprocessing.megadetector import MegaDetector
 from wildlifeml.data import WildlifeDataset, subset_dataset, BBoxMapper
