@@ -13,9 +13,9 @@ PROJ_DIR: Final[str] = '/home/wimmerl/projects/wildlife-experiments/'
 PRED_DIR: Final[str] = PROJ_DIR + 'results/bavaria/md5/predictions/'
 DETECTOR_FILE_PATH: Final[str] = PROJ_DIR + 'data/bavaria/md5/md.json'
 BBOX_PATH: Final[str] = PROJ_DIR + 'data/bavaria/md5/bbox_map.json'
-MODEL_PATH: Final[str] = ''
+MODEL_PATH: Final[str] = PROJ_DIR + 'data/bavaria/md5/final_ckpt/ckpt_final.hdf5'
 THRESHOLD: Final[float] = 0.1
-KEYS: Final[List] = ['']
+KEYS: Final[List] = ['10000_I_00249b.JPG', '10001_I_00058a.JPG', '10003_I_00226c.JPG']
 BATCH_SIZE: Final[int] = 64
 NUM_CLASSES: Final[int] = 7
 EMPTY_CLASS_ID: Final[int] = 0
@@ -24,7 +24,7 @@ EMPTY_CLASS_ID: Final[int] = 0
 def main():
 
     dataset = WildlifeDataset(
-        keys=['10000_I_00249b.JPG', '10001_I_00058a.JPG', '10003_I_00226c.JPG'],
+        keys=KEYS,
         image_dir=IMG_DIR,
         detector_file_path=DETECTOR_FILE_PATH,
         bbox_map=load_json(BBOX_PATH),
