@@ -5,6 +5,7 @@ import albumentations as A
 
 from tensorflow.keras.models import load_model
 from wildlifeml import WildlifeDataset
+from wildlifeml.data import BBoxMapper
 from wildlifeml.training.evaluator import Evaluator
 from wildlifeml.utils.io import load_json
 
@@ -23,8 +24,11 @@ EMPTY_CLASS_ID: Final[int] = 0
 
 def main():
 
+    mapper = BBoxMapper(DETECTOR_FILE_PATH)
+    key_map = mapper.get_keymap()
+    all_keys = list(key_map.keys())
     dataset = WildlifeDataset(
-        keys=KEYS,
+        keys=[k for k in all_keys if any(x in k for x in KEYS)],
         image_dir=IMG_DIR,
         detector_file_path=DETECTOR_FILE_PATH,
         bbox_map=load_json(BBOX_PATH),
