@@ -1,31 +1,21 @@
 """In-sample results."""
 
-import time
-
 import click
 import os
-
-import numpy as np
-import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
-import gc
-from typing import Dict, Final, List
+from typing import Dict, Final
 from wildlifeml.data import subset_dataset
 from wildlifeml.training.trainer import WildlifeTrainer
-from wildlifeml.training.active import ActiveLearner
-from wildlifeml.training.evaluator import Evaluator
-from wildlifeml.utils.datasets import separate_empties, map_bbox_to_img, do_stratified_splitting
+from wildlifeml.utils.datasets import separate_empties
 from wildlifeml.utils.io import (
     load_csv,
     load_json,
     load_pickle,
-    save_as_csv,
-    save_as_pickle,
 )
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
-from utils import seed_everything, MyEarlyStopping
+from utils import seed_everything
 
 THRESH_TUNED: Final[float] = 0.1
 BACKBONE_TUNED: Final[str] = 'xception'
@@ -46,10 +36,6 @@ def main(repo_dir: str, random_seed: int):
     os.makedirs(os.path.join(cfg['result_dir'], 'final'), exist_ok=True)
 
     # Get data
-    stations_dict = {
-        k: {'station': v}
-        for k, v in load_csv(os.path.join(cfg['data_dir'], 'stations.csv'))
-    }
     dataset_train = load_pickle(os.path.join(cfg['data_dir'], 'dataset_full_train.pkl'))
     dataset_val = load_pickle(os.path.join(cfg['data_dir'], 'dataset_full_val.pkl'))
     _, keys_all_nonempty = separate_empties(

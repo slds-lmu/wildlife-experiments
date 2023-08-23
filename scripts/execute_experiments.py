@@ -227,7 +227,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                 evaluator = Evaluator(
                     dataset=ds, conf_threshold=float(threshold), **evaluator_args,
                 )
-                evaluator.evaluate(trainer)
+                evaluator.evaluate(trainer.model)
                 save_as_pickle(
                     evaluator.get_details(),
                     os.path.join(
@@ -242,7 +242,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
                     conf_threshold=float(threshold),
                     **evaluator_args,
                 )
-                evaluator_oos.evaluate(trainer)
+                evaluator_oos.evaluate(trainer.model)
                 details_oos = evaluator_oos.get_details()
                 save_as_pickle(
                     details_oos,
@@ -319,7 +319,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
             conf_threshold=float(THRESH_TUNED),
             **evaluator_args,
         )
-        evaluator.evaluate(trainer_optimal)
+        evaluator.evaluate(trainer_optimal.model)
         save_as_pickle(
             evaluator.get_details(),
             os.path.join(
