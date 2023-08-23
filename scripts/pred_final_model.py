@@ -26,9 +26,8 @@ def main():
 
     mapper = BBoxMapper(DETECTOR_FILE_PATH)
     key_map = mapper.get_keymap()
-    all_keys = list(key_map.keys())
     dataset = WildlifeDataset(
-        keys=[k for k in all_keys if any(x in k for x in KEYS)],
+        keys=[key_map[k] for k in KEYS],
         image_dir=IMG_DIR,
         detector_file_path=DETECTOR_FILE_PATH,
         bbox_map=load_json(BBOX_PATH),
