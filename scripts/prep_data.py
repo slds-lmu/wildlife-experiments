@@ -8,7 +8,7 @@ import os
 from typing import Dict, Final
 import albumentations as A
 from wildlifeml.preprocessing.megadetector import MegaDetector
-from wildlifeml.data import WildlifeDataset, subset_dataset, BBoxMapper
+from wildlifeml.data import BBoxMapper, WildlifeDataset, subset_dataset, DatasetConverter
 from wildlifeml.utils.datasets import do_stratified_splitting
 from wildlifeml.utils.io import (
     load_csv_dict,
@@ -19,6 +19,9 @@ from wildlifeml.utils.io import (
 )
 from wildlifeml.utils.misc import flatten_list
 from utils import seed_everything
+import json
+import random
+import pandas as pd
 
 
 @click.command()
@@ -28,7 +31,14 @@ from utils import seed_everything
 @click.option(
     '--random_seed', '-s', help='Random seed.', required=True
 )
-def main(repo_dir: str, random_seed: int):
+@click.option(
+    '--dataset_converter', '-s', help='Whether the data is in necessary format. ', required=False, default=False
+)
+@click.option(
+    '--images_dir', '-s', help='Path to images if convertion needed.', required=False, default=""
+)
+
+def main(repo_dir: str, random_seed: int, dataset_converter: bool, images_dir: str):
 
     # ----------------------------------------------------------------------------------
     # GLOBAL ---------------------------------------------------------------------------
@@ -37,6 +47,45 @@ def main(repo_dir: str, random_seed: int):
     seed_everything(random_seed)
     cfg: Final[Dict] = load_json(os.path.join(repo_dir, 'configs/cfg.json'))
 
+    if dataset_converter:
+        print("Converting the data to the required format...")
+        conv = DatasetConverter(root_dir=images_dir, target_dir=cfg['data_dir'])
+        conv.convert()
+
+    # check if metadata.csv exists 
+    if 'metadata.csv' not in os.listdir(cfg['data_dir']):
+        # prepare the metadata file
+        stations = STATIONS_IS + STATIONS_OOS
+        with open(os.path.join(cfg['data_dir'], "label_map.json")) as json_file:
+            label_map = json.load(json_file)
+        img_names = os.listdir(cfg['data_dir'])
+        true_class = []
+        filtered_names = []
+        meta_stations = []
+        doy = []
+        hour = []
+        station_sets = ["s1", "s2"]
+        station_set = []
+        for filename in img_names:
+            species_name = filename.split('_')[:2]
+            species_name = "_".join(species_name)
+            if species_name in label_map:
+                true_class.append(species_name)
+                filtered_names.append(filename)
+                meta_stations.append(random.choice(stations))
+                station_set.append(random.choice(station_sets))
+                doy.append(random.randint(1,365))
+                hour.append(random.randint(0,23))
+        metadata = pd.DataFrame()
+        metadata['orig_name'] = filtered_names
+        metadata['true_class'] = true_class
+        metadata['doy'] = doy
+        metadata['hour'] = hour
+        metadata['station'] = meta_stations
+        metadata['station_set'] = station_set
+        metadata.to_csv(os.path.join(cfg['data_dir'], "metadata.csv"))
+
+        
     # Create label map and  label file with two columns (img key, numeric label)
     info_list = load_csv_dict(os.path.join(cfg['data_dir'], cfg['info_file']))
     class_names = list(set([x['true_class'] for x in info_list]))
@@ -44,6 +93,7 @@ def main(repo_dir: str, random_seed: int):
     label_map = {class_names[i]: i for i in range(len(class_names))}
     label_dict = {x['orig_name']: label_map[x['true_class']] for x in info_list}
     station_dict = {x['orig_name']: x['station'] for x in info_list}
+
 
     # Run MegaDetector
     if not os.path.exists(os.path.join(cfg['data_dir'], cfg['detector_file'])):
