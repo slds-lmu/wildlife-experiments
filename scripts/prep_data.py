@@ -1,11 +1,10 @@
 """Prepare data to perform experiments on."""
 import collections
 import math
-import random
 
 import click
 import os
-from typing import Dict, Final
+from typing import Dict, Final, List
 import albumentations as A
 from wildlifeml.preprocessing.megadetector import MegaDetector
 from wildlifeml.data import BBoxMapper, WildlifeDataset, subset_dataset, DatasetConverter
@@ -18,11 +17,53 @@ from wildlifeml.utils.io import (
     save_as_pickle
 )
 from wildlifeml.utils.misc import flatten_list
-from utils import seed_everything
+from utils_ours import seed_everything
 import json
 import random
 import pandas as pd
 
+
+STATIONS_IS: Final[List] = [
+    '8235_For',
+    '5838_2For',
+    '6225_2For',
+    '7935_2_F',
+    '5924_3For',
+    '8229_2_F',
+    '6027_3For',
+    '6032_4For',
+    '5636_4For',
+    '7545_2For',
+    '6131_1For',
+    '6533_4For',
+    '5923_3For',
+    '6137_4For',
+    '5938_3For',
+    '8130_2_F',
+    '5837_4For',
+    '6234_2For'
+]
+STATIONS_OOS: Final[List] = [
+    '7143_4For',
+    '7446_1For',
+    '6035_3For',
+    '8131_1_F',
+    '6934_For',
+    '7837_4_For',
+    '8141_2For',
+    '5933_4_For',
+    '7544_2For',
+    '8243_1For',
+    '7332_For',
+    '5728_2Fb',
+    '6231_4For',
+    '8030_1_F',
+    '7730_2For',
+    '5737_3_For',
+    '6122_4For',
+    '6034_2For',
+    '5728_2Fa'
+]
 
 @click.command()
 @click.option(
@@ -32,10 +73,10 @@ import pandas as pd
     '--random_seed', '-s', help='Random seed.', required=True
 )
 @click.option(
-    '--dataset_converter', '-s', help='Whether the data is in necessary format. ', required=False, default=False
+    '--dataset_converter', '-c', help='Whether the data is in necessary format. ', required=False, default=False
 )
 @click.option(
-    '--images_dir', '-s', help='Path to images if convertion needed.', required=False, default=""
+    '--images_dir', '-i', help='Path to images if convertion needed.', required=False, default=""
 )
 
 def main(repo_dir: str, random_seed: int, dataset_converter: bool, images_dir: str):
@@ -49,7 +90,7 @@ def main(repo_dir: str, random_seed: int, dataset_converter: bool, images_dir: s
 
     if dataset_converter:
         print("Converting the data to the required format...")
-        conv = DatasetConverter(root_dir=images_dir, target_dir=cfg['data_dir'])
+        conv = DatasetConverter(root_dir=images_dir, target_dir=cfg['img_dir'])
         conv.convert()
 
     # check if metadata.csv exists 
@@ -58,7 +99,7 @@ def main(repo_dir: str, random_seed: int, dataset_converter: bool, images_dir: s
         stations = STATIONS_IS + STATIONS_OOS
         with open(os.path.join(cfg['data_dir'], "label_map.json")) as json_file:
             label_map = json.load(json_file)
-        img_names = os.listdir(cfg['data_dir'])
+        img_names = os.listdir(cfg['img_dir'])
         true_class = []
         filtered_names = []
         meta_stations = []
