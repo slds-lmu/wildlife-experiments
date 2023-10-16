@@ -1,4 +1,4 @@
-"""Prepare data to perform experiments on."""
+"""Prepare data to perform inference on."""
 import click
 import os
 from typing import Dict, Final
