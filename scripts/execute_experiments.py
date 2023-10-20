@@ -46,13 +46,19 @@ FTLAYERS_TUNED: Final[int] = 0
     '--random_seed', '-s', help='Random seed.', required=True
 )
 @click.option(
+    '--start',
+    '-t',
+    help='coldstart or warmstart',
+    default='na'
+)
+@click.option(
     '--acq_criterion',
     '-a',
     help='AL acquisition criterion.',
     required=False,
     default='entropy'
 )
-def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
+def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str, start: str):
 
     # ----------------------------------------------------------------------------------
     # GLOBAL ---------------------------------------------------------------------------
@@ -118,6 +124,15 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         'num_classes': cfg['num_classes'],
         'empty_class_id': empty_class_id,
     }
+
+    if start == "na":
+        modes = ["coldstart", "warmstart"]
+    elif start == "coldstart":
+        modes = ["coldstart"]
+    elif start == "warmstart":
+        modes = ["warmstart"]
+    else:
+        raise IOError('Unknown start type.')
 
     # ----------------------------------------------------------------------------------
     # PASSIVE LEARNING -----------------------------------------------------------------
@@ -412,7 +427,7 @@ def main(repo_dir: str, experiment: str, random_seed: int, acq_criterion: str):
         init_batches: Final[List] = [2**x for x in range(7, 13)]
         batch_sizes: Final[List] = init_batches + [n_obs - sum(init_batches)]
 
-        for mode in ['warmstart', 'coldstart']:
+        for mode in modes:
 
             result_dir = os.path.join(
                 cfg['result_dir'],
